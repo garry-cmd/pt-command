@@ -650,40 +650,779 @@ export default function PTCommand() {
 
         {/* Program Tab Content */}
         {activeTab === 'program' && (
-          <div className="pt-card" style={{ textAlign: 'center', padding: '48px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>⚡</div>
-            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#f1f5f9' }}>
-              Program Module
-            </h3>
-            <p style={{ color: '#94a3b8', margin: 0 }}>
-              Under construction - focus on Today tab for workout logging
-            </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
+            {/* H/M/L Protocol Overview */}
+            <div className="pt-card">
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                Heavy/Medium/Light Protocol
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                
+                {/* Heavy Day */}
+                <div style={{ 
+                  backgroundColor: '#7f1d1d', 
+                  border: '1px solid #ef4444', 
+                  borderRadius: '12px', 
+                  padding: '20px' 
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ 
+                      backgroundColor: '#ef4444', 
+                      color: '#000', 
+                      padding: '4px 12px', 
+                      borderRadius: '6px', 
+                      fontSize: '14px', 
+                      fontWeight: '600' 
+                    }}>
+                      HEAVY
+                    </div>
+                    <span style={{ marginLeft: '12px', color: '#94a3b8', fontSize: '14px' }}>Monday</span>
+                  </div>
+                  <h4 style={{ margin: '0 0 8px 0', color: '#ef4444' }}>90-100% Training Max</h4>
+                  <p style={{ margin: '0 0 12px 0', color: '#d1d5db', fontSize: '14px' }}>
+                    Max effort singles and doubles. Neural adaptation focus.
+                  </p>
+                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    • Deadlifts: Work up to 1RM<br/>
+                    • Bench: Heavy singles<br/>
+                    • KB Swings: 3×20 for time
+                  </div>
+                </div>
+
+                {/* Light Day */}
+                <div style={{ 
+                  backgroundColor: '#14532d', 
+                  border: '1px solid #22c55e', 
+                  borderRadius: '12px', 
+                  padding: '20px' 
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ 
+                      backgroundColor: '#22c55e', 
+                      color: '#000', 
+                      padding: '4px 12px', 
+                      borderRadius: '6px', 
+                      fontSize: '14px', 
+                      fontWeight: '600' 
+                    }}>
+                      LIGHT
+                    </div>
+                    <span style={{ marginLeft: '12px', color: '#94a3b8', fontSize: '14px' }}>Wednesday</span>
+                  </div>
+                  <h4 style={{ margin: '0 0 8px 0', color: '#22c55e' }}>60-70% Training Max</h4>
+                  <p style={{ margin: '0 0 12px 0', color: '#d1d5db', fontSize: '14px' }}>
+                    Volume work and technique practice. Recovery focused.
+                  </p>
+                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    • Squats: 4×6-8 reps<br/>
+                    • OHP: 4×6-8 reps<br/>
+                    • KB Swings: 10×20, 1min rest
+                  </div>
+                </div>
+
+                {/* Medium Day */}
+                <div style={{ 
+                  backgroundColor: '#451a03', 
+                  border: '1px solid #eab308', 
+                  borderRadius: '12px', 
+                  padding: '20px' 
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ 
+                      backgroundColor: '#eab308', 
+                      color: '#000', 
+                      padding: '4px 12px', 
+                      borderRadius: '6px', 
+                      fontSize: '14px', 
+                      fontWeight: '600' 
+                    }}>
+                      MEDIUM
+                    </div>
+                    <span style={{ marginLeft: '12px', color: '#94a3b8', fontSize: '14px' }}>Friday</span>
+                  </div>
+                  <h4 style={{ margin: '0 0 8px 0', color: '#eab308' }}>70-85% Training Max</h4>
+                  <p style={{ margin: '0 0 12px 0', color: '#d1d5db', fontSize: '14px' }}>
+                    Moderate intensity. Strength-power development.
+                  </p>
+                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    • Squats: 4×3-5 reps<br/>
+                    • OHP: 4×3-5 reps<br/>
+                    • KB Swings: 10×10, 1min rest
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Training Max Calculator */}
+            <div className="pt-card">
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                Training Max Calculator
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                
+                {['Deadlift', 'Bench Press', 'Squat', 'Overhead Press'].map((exercise: string, index: number) => (
+                  <div key={index} style={{ 
+                    backgroundColor: '#374151', 
+                    border: '1px solid #4b5563', 
+                    borderRadius: '8px', 
+                    padding: '16px' 
+                  }}>
+                    <h4 style={{ margin: '0 0 12px 0', color: '#f1f5f9', fontSize: '16px' }}>{exercise}</h4>
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>
+                        Current 1RM (lbs)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        style={{ 
+                          width: '100%', 
+                          padding: '8px', 
+                          borderRadius: '6px', 
+                          border: '1px solid #4b5563',
+                          backgroundColor: '#1f2937',
+                          color: '#f1f5f9',
+                          fontSize: '14px'
+                        }}
+                      />
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                      <div>90% TM: <span style={{ color: '#ef4444', fontWeight: '600' }}>---</span></div>
+                      <div>70% TM: <span style={{ color: '#eab308', fontWeight: '600' }}>---</span></div>
+                      <div>60% TM: <span style={{ color: '#22c55e', fontWeight: '600' }}>---</span></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Exercise Database */}
+            <div className="pt-card">
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                Exercise Database
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                
+                {[
+                  {
+                    name: 'Deadlift',
+                    description: 'King of all lifts. Full-body posterior chain development.',
+                    muscles: 'Hamstrings, Glutes, Lats, Traps, Rhomboids',
+                    tips: 'Keep bar close to body. Drive through heels. Chest up.',
+                    restTime: '4-5 minutes'
+                  },
+                  {
+                    name: 'Bench Press',
+                    description: 'Upper body power. Chest, shoulders, and triceps.',
+                    muscles: 'Pectorals, Anterior Deltoids, Triceps',
+                    tips: 'Retract shoulder blades. Arch back slightly. Control descent.',
+                    restTime: '3-4 minutes'
+                  },
+                  {
+                    name: 'Squat',
+                    description: 'Lower body foundation. Quad and glute dominant.',
+                    muscles: 'Quadriceps, Glutes, Core, Calves',
+                    tips: 'Break at hips first. Knees track over toes. Full depth.',
+                    restTime: '3-4 minutes'
+                  },
+                  {
+                    name: 'Overhead Press',
+                    description: 'Standing shoulder press. Core stability and power.',
+                    muscles: 'Shoulders, Triceps, Upper Back, Core',
+                    tips: 'Tight core. Press in straight line. Lock out overhead.',
+                    restTime: '2-3 minutes'
+                  }
+                ].map((exercise, index: number) => (
+                  <div key={index} style={{ 
+                    backgroundColor: '#374151', 
+                    border: '1px solid #4b5563', 
+                    borderRadius: '8px', 
+                    padding: '16px' 
+                  }}>
+                    <h4 style={{ margin: '0 0 8px 0', color: '#facc15', fontSize: '16px' }}>{exercise.name}</h4>
+                    <p style={{ margin: '0 0 12px 0', color: '#d1d5db', fontSize: '14px' }}>
+                      {exercise.description}
+                    </p>
+                    <div style={{ fontSize: '12px', marginBottom: '8px' }}>
+                      <span style={{ color: '#94a3b8' }}>Primary Muscles: </span>
+                      <span style={{ color: '#f1f5f9' }}>{exercise.muscles}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', marginBottom: '8px' }}>
+                      <span style={{ color: '#94a3b8' }}>Key Tips: </span>
+                      <span style={{ color: '#f1f5f9' }}>{exercise.tips}</span>
+                    </div>
+                    <div style={{ fontSize: '12px' }}>
+                      <span style={{ color: '#94a3b8' }}>Rest Time: </span>
+                      <span style={{ color: '#22c55e', fontWeight: '600' }}>{exercise.restTime}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         )}
 
         {/* History Tab Content */}
         {activeTab === 'history' && (
-          <div className="pt-card" style={{ textAlign: 'center', padding: '48px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>⚡</div>
-            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#f1f5f9' }}>
-              History Module
-            </h3>
-            <p style={{ color: '#94a3b8', margin: 0 }}>
-              Under construction - focus on Today tab for workout logging
-            </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
+            {/* Recent Sessions */}
+            <div className="pt-card">
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                Recent Sessions
+              </h3>
+              
+              {[
+                {
+                  date: 'Friday, Apr 11, 2026',
+                  type: 'Medium Day',
+                  color: '#eab308',
+                  duration: '48 min',
+                  exercises: [
+                    { name: 'Squats', sets: 4, topSet: '265×1', completed: true },
+                    { name: 'OHP', sets: 4, topSet: '175×1', completed: true },
+                    { name: 'KB Swings', sets: 10, topSet: '35×10', completed: true }
+                  ]
+                },
+                {
+                  date: 'Wednesday, Apr 9, 2026', 
+                  type: 'Light Day',
+                  color: '#22c55e',
+                  duration: '52 min',
+                  exercises: [
+                    { name: 'Squats', sets: 4, topSet: '220×8', completed: true },
+                    { name: 'OHP', sets: 4, topSet: '155×8', completed: true },
+                    { name: 'KB Swings', sets: 10, topSet: '35×20', completed: true }
+                  ]
+                },
+                {
+                  date: 'Monday, Apr 7, 2026',
+                  type: 'Heavy Day', 
+                  color: '#ef4444',
+                  duration: '65 min',
+                  exercises: [
+                    { name: 'Deadlifts', sets: 4, topSet: '425×1', completed: true },
+                    { name: 'Bench Press', sets: 4, topSet: '275×1', completed: true },
+                    { name: 'KB Swings', sets: 3, topSet: '35×20', completed: true }
+                  ]
+                },
+                {
+                  date: 'Friday, Apr 4, 2026',
+                  type: 'Medium Day',
+                  color: '#eab308', 
+                  duration: '45 min',
+                  exercises: [
+                    { name: 'Squats', sets: 4, topSet: '250×3', completed: false },
+                    { name: 'OHP', sets: 4, topSet: '165×2', completed: false },
+                    { name: 'KB Swings', sets: 7, topSet: '35×10', completed: false }
+                  ]
+                }
+              ].map((session, index: number) => (
+                <div key={index} style={{ 
+                  border: `1px solid ${session.color}`, 
+                  borderRadius: '12px', 
+                  padding: '20px', 
+                  backgroundColor: session.completed ? 'rgba(34, 197, 94, 0.1)' : '#1f2937',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                    <div>
+                      <h4 style={{ margin: '0 0 4px 0', color: session.color, fontSize: '16px', fontWeight: '600' }}>
+                        {session.type}
+                      </h4>
+                      <p style={{ margin: 0, color: '#94a3b8', fontSize: '14px' }}>
+                        {session.date}
+                      </p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ 
+                        backgroundColor: session.color, 
+                        color: '#000', 
+                        padding: '4px 8px', 
+                        borderRadius: '6px', 
+                        fontSize: '12px', 
+                        fontWeight: '600',
+                        marginBottom: '4px'
+                      }}>
+                        {session.duration}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                        {session.exercises.every((ex: any) => ex.completed) ? '✓ Complete' : '⚠ Incomplete'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px' }}>
+                    {session.exercises.map((exercise: any, exIndex: number) => (
+                      <div key={exIndex} style={{ 
+                        backgroundColor: '#374151', 
+                        padding: '8px 12px', 
+                        borderRadius: '6px',
+                        border: exercise.completed ? '1px solid #22c55e' : '1px solid #ef4444'
+                      }}>
+                        <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '2px' }}>
+                          {exercise.name}
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#f1f5f9', fontFamily: 'monospace' }}>
+                          {exercise.sets}×{exercise.topSet}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Performance Trends */}
+            <div className="pt-card">
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                Performance Trends (Last 30 Days)
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                {[
+                  { exercise: 'Deadlift', current: '425 lbs', change: '+15 lbs', trend: 'up' },
+                  { exercise: 'Bench Press', current: '275 lbs', change: '+10 lbs', trend: 'up' },
+                  { exercise: 'Squat', current: '265 lbs', change: '+5 lbs', trend: 'up' },
+                  { exercise: 'Overhead Press', current: '175 lbs', change: '+5 lbs', trend: 'up' }
+                ].map((stat, index: number) => (
+                  <div key={index} style={{ 
+                    backgroundColor: '#374151', 
+                    border: '1px solid #4b5563', 
+                    borderRadius: '8px', 
+                    padding: '16px' 
+                  }}>
+                    <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '8px' }}>
+                      {stat.exercise}
+                    </div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#f1f5f9', marginBottom: '4px' }}>
+                      {stat.current}
+                    </div>
+                    <div style={{ 
+                      fontSize: '12px', 
+                      color: stat.trend === 'up' ? '#22c55e' : '#ef4444',
+                      fontWeight: '600'
+                    }}>
+                      {stat.trend === 'up' ? '↗' : '↘'} {stat.change}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Session Calendar */}
+            <div className="pt-card">
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                Workout Calendar - April 2026
+              </h3>
+              
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(7, 1fr)', 
+                gap: '8px',
+                marginBottom: '16px'
+              }}>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day: string) => (
+                  <div key={day} style={{ 
+                    padding: '8px', 
+                    textAlign: 'center', 
+                    fontSize: '12px', 
+                    fontWeight: '600', 
+                    color: '#94a3b8' 
+                  }}>
+                    {day}
+                  </div>
+                ))}
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+                {Array.from({ length: 30 }, (_, i) => {
+                  const dayNum = i + 1
+                  const isWorkout = dayNum % 2 === 1 && dayNum <= 17 // Mock workout days
+                  const workoutType = 
+                    dayNum === 1 || dayNum === 15 ? 'Heavy' :
+                    dayNum === 3 || dayNum === 17 ? 'Light' :
+                    dayNum === 5 || dayNum === 11 ? 'Medium' :
+                    null
+                  
+                  return (
+                    <div key={i} style={{ 
+                      padding: '8px', 
+                      textAlign: 'center', 
+                      fontSize: '14px', 
+                      borderRadius: '6px',
+                      backgroundColor: isWorkout ? '#374151' : '#1f2937',
+                      border: isWorkout ? '1px solid #facc15' : '1px solid #374151',
+                      minHeight: '40px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center'
+                    }}>
+                      <div style={{ color: '#f1f5f9', fontWeight: '600' }}>{dayNum}</div>
+                      {workoutType && (
+                        <div style={{ 
+                          fontSize: '8px', 
+                          color: '#facc15',
+                          marginTop: '2px'
+                        }}>
+                          {workoutType}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
           </div>
         )}
 
         {/* Progress Tab Content */}
         {activeTab === 'progress' && (
-          <div className="pt-card" style={{ textAlign: 'center', padding: '48px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>⚡</div>
-            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#f1f5f9' }}>
-              Progress Module
-            </h3>
-            <p style={{ color: '#94a3b8', margin: 0 }}>
-              Under construction - focus on Today tab for workout logging
-            </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
+            {/* Personal Records */}
+            <div className="pt-card">
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                Personal Records
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                {[
+                  { 
+                    exercise: 'Deadlift', 
+                    current: '425 lbs', 
+                    previous: '410 lbs', 
+                    date: 'Apr 7, 2026',
+                    improvement: '+15 lbs',
+                    color: '#ef4444'
+                  },
+                  { 
+                    exercise: 'Bench Press', 
+                    current: '275 lbs', 
+                    previous: '265 lbs', 
+                    date: 'Apr 7, 2026',
+                    improvement: '+10 lbs',
+                    color: '#3b82f6'
+                  },
+                  { 
+                    exercise: 'Squat', 
+                    current: '265 lbs', 
+                    previous: '260 lbs', 
+                    date: 'Apr 11, 2026',
+                    improvement: '+5 lbs',
+                    color: '#eab308'
+                  },
+                  { 
+                    exercise: 'Overhead Press', 
+                    current: '175 lbs', 
+                    previous: '170 lbs', 
+                    date: 'Apr 11, 2026',
+                    improvement: '+5 lbs',
+                    color: '#22c55e'
+                  }
+                ].map((pr, index: number) => (
+                  <div key={index} style={{ 
+                    background: `linear-gradient(135deg, ${pr.color}20, transparent)`,
+                    border: `1px solid ${pr.color}`, 
+                    borderRadius: '12px', 
+                    padding: '20px' 
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                      <h4 style={{ margin: 0, color: pr.color, fontSize: '16px', fontWeight: '600' }}>
+                        {pr.exercise}
+                      </h4>
+                      <div style={{ 
+                        backgroundColor: pr.color, 
+                        color: '#000', 
+                        padding: '2px 8px', 
+                        borderRadius: '4px', 
+                        fontSize: '10px', 
+                        fontWeight: '600' 
+                      }}>
+                        NEW PR
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#f1f5f9', marginBottom: '8px' }}>
+                      {pr.current}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
+                      Previous: {pr.previous}
+                    </div>
+                    <div style={{ fontSize: '12px', color: pr.color, fontWeight: '600' }}>
+                      {pr.improvement} improvement • {pr.date}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Strength Progression Chart */}
+            <div className="pt-card">
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                Strength Progression (Last 12 Weeks)
+              </h3>
+              
+              {/* Mock Chart Area */}
+              <div style={{ 
+                backgroundColor: '#1f2937', 
+                border: '1px solid #374151', 
+                borderRadius: '8px', 
+                padding: '24px',
+                minHeight: '300px',
+                position: 'relative'
+              }}>
+                {/* Chart Legend */}
+                <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', justifyContent: 'center' }}>
+                  {[
+                    { exercise: 'Deadlift', color: '#ef4444' },
+                    { exercise: 'Bench', color: '#3b82f6' },
+                    { exercise: 'Squat', color: '#eab308' },
+                    { exercise: 'OHP', color: '#22c55e' }
+                  ].map((item, index: number) => (
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ 
+                        width: '12px', 
+                        height: '12px', 
+                        backgroundColor: item.color, 
+                        borderRadius: '2px' 
+                      }}></div>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>{item.exercise}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mock Chart Lines */}
+                <div style={{ 
+                  height: '200px', 
+                  background: `
+                    linear-gradient(45deg, transparent 48%, #ef444450 49%, #ef444450 51%, transparent 52%),
+                    linear-gradient(35deg, transparent 48%, #3b82f650 49%, #3b82f650 51%, transparent 52%),
+                    linear-gradient(25deg, transparent 48%, #eab30850 49%, #eab30850 51%, transparent 52%),
+                    linear-gradient(15deg, transparent 48%, #22c55e50 49%, #22c55e50 51%, transparent 52%)
+                  `,
+                  borderRadius: '4px',
+                  position: 'relative'
+                }}>
+                  {/* Y-axis labels */}
+                  <div style={{ 
+                    position: 'absolute', 
+                    left: '-40px', 
+                    top: 0, 
+                    height: '100%', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'space-between',
+                    color: '#94a3b8',
+                    fontSize: '10px'
+                  }}>
+                    <span>450</span>
+                    <span>350</span>
+                    <span>250</span>
+                    <span>150</span>
+                  </div>
+                  
+                  {/* X-axis labels */}
+                  <div style={{ 
+                    position: 'absolute', 
+                    bottom: '-25px', 
+                    left: 0, 
+                    right: 0, 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    color: '#94a3b8',
+                    fontSize: '10px'
+                  }}>
+                    <span>Jan</span>
+                    <span>Feb</span>
+                    <span>Mar</span>
+                    <span>Apr</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Volume & Frequency Analysis */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+              
+              {/* Weekly Volume */}
+              <div className="pt-card">
+                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                  Weekly Training Volume
+                </h3>
+                
+                {[
+                  { week: 'This Week', sets: 36, volume: '12,450 lbs', status: 'current' },
+                  { week: 'Last Week', sets: 42, volume: '13,200 lbs', status: 'complete' },
+                  { week: '2 Weeks Ago', sets: 39, volume: '12,850 lbs', status: 'complete' },
+                  { week: '3 Weeks Ago', sets: 45, volume: '13,980 lbs', status: 'complete' }
+                ].map((week, index: number) => (
+                  <div key={index} style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    backgroundColor: week.status === 'current' ? '#374151' : '#1f2937',
+                    border: week.status === 'current' ? '1px solid #facc15' : '1px solid #374151',
+                    borderRadius: '8px',
+                    marginBottom: '8px'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '600' }}>
+                        {week.week}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                        {week.sets} total sets
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '16px', color: '#facc15', fontWeight: '600' }}>
+                        {week.volume}
+                      </div>
+                      <div style={{ fontSize: '10px', color: '#94a3b8' }}>
+                        total volume
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Training Frequency */}
+              <div className="pt-card">
+                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                  Training Frequency
+                </h3>
+                
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '14px', color: '#94a3b8' }}>Sessions This Month</span>
+                    <span style={{ fontSize: '16px', color: '#22c55e', fontWeight: '600' }}>12 / 12</span>
+                  </div>
+                  <div style={{ 
+                    height: '8px', 
+                    backgroundColor: '#374151', 
+                    borderRadius: '4px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{ 
+                      height: '100%', 
+                      width: '100%', 
+                      backgroundColor: '#22c55e',
+                      borderRadius: '4px'
+                    }}></div>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '14px', color: '#94a3b8' }}>Consistency Score</span>
+                    <span style={{ fontSize: '16px', color: '#22c55e', fontWeight: '600' }}>95%</span>
+                  </div>
+                  <div style={{ 
+                    height: '8px', 
+                    backgroundColor: '#374151', 
+                    borderRadius: '4px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{ 
+                      height: '100%', 
+                      width: '95%', 
+                      backgroundColor: '#22c55e',
+                      borderRadius: '4px'
+                    }}></div>
+                  </div>
+                </div>
+
+                {/* Average Session Time */}
+                <div style={{ 
+                  backgroundColor: '#374151', 
+                  padding: '16px', 
+                  borderRadius: '8px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#facc15', marginBottom: '4px' }}>
+                    52 min
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    Average Session Duration
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Goals & Targets */}
+            <div className="pt-card">
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                2026 Strength Goals
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                {[
+                  { 
+                    exercise: 'Deadlift', 
+                    current: 425, 
+                    goal: 500, 
+                    progress: 85,
+                    color: '#ef4444'
+                  },
+                  { 
+                    exercise: 'Bench Press', 
+                    current: 275, 
+                    goal: 315, 
+                    progress: 87,
+                    color: '#3b82f6'
+                  },
+                  { 
+                    exercise: 'Squat', 
+                    current: 265, 
+                    goal: 350, 
+                    progress: 76,
+                    color: '#eab308'
+                  },
+                  { 
+                    exercise: 'Overhead Press', 
+                    current: 175, 
+                    goal: 225, 
+                    progress: 78,
+                    color: '#22c55e'
+                  }
+                ].map((goal, index: number) => (
+                  <div key={index} style={{ 
+                    backgroundColor: '#374151', 
+                    border: `1px solid ${goal.color}`, 
+                    borderRadius: '8px', 
+                    padding: '16px' 
+                  }}>
+                    <h4 style={{ margin: '0 0 8px 0', color: goal.color, fontSize: '14px' }}>
+                      {goal.exercise}
+                    </h4>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#f1f5f9', marginBottom: '4px' }}>
+                      {goal.current} / {goal.goal} lbs
+                    </div>
+                    <div style={{ 
+                      height: '6px', 
+                      backgroundColor: '#1f2937', 
+                      borderRadius: '3px',
+                      overflow: 'hidden',
+                      marginBottom: '8px'
+                    }}>
+                      <div style={{ 
+                        height: '100%', 
+                        width: `${goal.progress}%`, 
+                        backgroundColor: goal.color,
+                        borderRadius: '3px'
+                      }}></div>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                      {goal.progress}% to goal • {goal.goal - goal.current} lbs remaining
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         )}
 
