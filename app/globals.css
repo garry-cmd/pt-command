@@ -1,0 +1,273 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components; 
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Naval submarine color system */
+    --hull-950: #090e12;      /* Main background */
+    --hull-900: #0f1a24;     /* Card background */
+    --hull-800: #1a2834;     /* Border color */
+    --hull-700: #314044;     
+    --hull-600: #4a5d66;     
+    --hull-500: #647c88;     
+    --hull-400: #8094a0;     
+    --hull-300: #9cacb8;     
+    --hull-200: #b8c4d0;     
+    --hull-100: #d4dce8;     
+    --hull-50: #f0f4f8;      
+    
+    /* Phosphor amber accents */
+    --amber-500: #c89828;    /* Primary accent */
+    --amber-600: #b5881f;    
+    --amber-400: #e9b543;    
+    --amber-300: #efca72;    
+    
+    /* Status colors */
+    --success: #48986a;      /* On track */
+    --warning: #c09838;      /* Medium intensity */
+    --danger: #c07060;       /* Off track/blocked */
+    
+    /* Text hierarchy */
+    --navy-50: #e8f0f8;      /* Primary text */
+    --navy-400: #88b4d8;     /* Secondary text */
+    --muted-100: #7a8a9a;    /* Tertiary text */
+  }
+
+  * {
+    border-color: var(--hull-800);
+  }
+
+  body {
+    @apply bg-hull-950 text-navy-50 antialiased;
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-hull-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-hull-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-amber-500;
+  }
+}
+
+@layer components {
+  /* Naval card component */
+  .naval-card {
+    @apply bg-hull-900 border border-hull-800 rounded-2xl;
+  }
+
+  .naval-card-elevated {
+    @apply naval-card shadow-naval;
+  }
+
+  /* Naval button variants */
+  .btn-primary {
+    @apply bg-amber-500 text-hull-950 hover:bg-amber-400 font-semibold px-4 py-3 rounded-xl transition-all duration-200;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent text-muted-100 border border-hull-800 hover:bg-hull-800 px-4 py-3 rounded-xl transition-all duration-200;
+  }
+
+  .btn-success {
+    @apply bg-success text-navy-50 hover:bg-green-600 font-semibold px-4 py-3 rounded-xl transition-all duration-200;
+  }
+
+  /* Navigation tabs */
+  .nav-tab {
+    @apply flex-1 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 cursor-pointer;
+  }
+
+  .nav-tab-active {
+    @apply bg-amber-500 text-hull-950 font-semibold;
+  }
+
+  .nav-tab-inactive {
+    @apply text-muted-100 hover:bg-hull-800;
+  }
+
+  /* Input styling */
+  .naval-input {
+    @apply bg-hull-900 border border-hull-800 text-navy-50 px-3 py-2 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200;
+  }
+
+  .naval-input-large {
+    @apply naval-input text-lg font-semibold text-center font-mono;
+  }
+
+  /* Exercise indicator */
+  .exercise-indicator {
+    @apply relative pl-4;
+  }
+
+  .exercise-indicator::before {
+    @apply absolute left-0 top-0 bottom-0 w-1 bg-amber-500 rounded-full;
+    content: '';
+  }
+
+  /* Status indicators */
+  .status-on-track {
+    @apply bg-success text-navy-50;
+  }
+
+  .status-warning {
+    @apply bg-warning text-hull-950;
+  }
+
+  .status-danger {
+    @apply bg-danger text-navy-50;
+  }
+
+  /* Workout session card */
+  .workout-card {
+    @apply naval-card p-6 hover:shadow-naval-lg transition-all duration-300;
+  }
+
+  .workout-card:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Set cards */
+  .set-card {
+    @apply naval-card p-4 transition-all duration-200 cursor-pointer;
+  }
+
+  .set-card:hover {
+    @apply shadow-naval transform -translate-y-1;
+  }
+
+  .set-card-active {
+    @apply border-2 border-amber-500 shadow-naval;
+  }
+
+  .set-card-completed {
+    @apply border border-success bg-success/10;
+  }
+
+  /* Timer display */
+  .timer-display {
+    @apply font-mono text-xl font-bold text-amber-500;
+  }
+
+  .timer-pulse {
+    animation: naval-pulse 2s infinite;
+  }
+
+  /* Weight badge */
+  .weight-badge {
+    @apply bg-hull-700 text-navy-400 px-2 py-1 rounded text-xs font-mono;
+  }
+
+  .weight-badge-heavy {
+    @apply bg-hull-600 text-amber-300;
+  }
+
+  /* Progress indicators */
+  .progress-bar {
+    @apply w-full bg-hull-800 rounded-full h-2;
+  }
+
+  .progress-fill {
+    @apply bg-amber-500 h-full rounded-full transition-all duration-500 ease-out;
+  }
+}
+
+@layer utilities {
+  /* Naval glow effects */
+  .glow-amber {
+    box-shadow: 0 0 20px rgba(200, 152, 40, 0.3);
+  }
+
+  .glow-amber-lg {
+    box-shadow: 0 0 40px rgba(200, 152, 40, 0.4);
+  }
+
+  .glow-success {
+    box-shadow: 0 0 20px rgba(72, 152, 106, 0.3);
+  }
+
+  /* Animation utilities */
+  .slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  .fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  /* Typography utilities */
+  .text-mono-sm {
+    @apply font-mono text-xs tracking-wide;
+  }
+
+  .text-mono-base {
+    @apply font-mono text-sm tracking-wide;
+  }
+
+  .text-mono-lg {
+    @apply font-mono text-base tracking-wide;
+  }
+}
+
+/* Animations */
+@keyframes naval-pulse {
+  0%, 100% { 
+    opacity: 1;
+    box-shadow: 0 0 20px rgba(200, 152, 40, 0.3);
+  }
+  50% { 
+    opacity: 0.8;
+    box-shadow: 0 0 30px rgba(200, 152, 40, 0.5);
+  }
+}
+
+@keyframes slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* Loading states */
+.skeleton {
+  @apply bg-hull-800 animate-pulse rounded;
+}
+
+/* Focus styles for accessibility */
+.focus-visible {
+  @apply ring-2 ring-amber-500 ring-offset-2 ring-offset-hull-950;
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
