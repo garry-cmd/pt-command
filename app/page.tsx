@@ -1,18 +1,44 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, ChangeEvent } from 'react'
 import './globals.css'
+
+// Type definitions
+interface WorkoutSet {
+  set_number: number
+  prescribed_weight: number
+  prescribed_reps: number
+  actual_weight: number
+  actual_reps: number
+  completed: boolean
+  completed_at?: string
+}
+
+interface Exercise {
+  name: string
+  sets: WorkoutSet[]
+}
+
+interface WorkoutSession {
+  type: string
+  name: string
+  color: string
+  description: string
+  exercises: Exercise[]
+}
+
+type ExerciseName = 'deadlift' | 'bench_press' | 'overhead_press' | 'squat' | 'kettlebell_swings';
 
 export default function PTCommand() {
   const [activeTab, setActiveTab] = useState<'today' | 'program' | 'history' | 'progress'>('today')
-  const [currentExercise, setCurrentExercise] = useState(0)
-  const [restTimer, setRestTimer] = useState(0)
-  const [isTimerRunning, setIsTimerRunning] = useState(false)
+  const [currentExercise, setCurrentExercise] = useState<number>(0)
+  const [restTimer, setRestTimer] = useState<number>(0)
+  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false)
   const [workoutStartTime, setWorkoutStartTime] = useState<number | null>(null)
-  const [currentSession, setCurrentSession] = useState<any>(null)
+  const [currentSession, setCurrentSession] = useState<WorkoutSession | null>(null)
 
   // Get today's workout based on day of week
-  const getTodaysWorkout = () => {
+  const getTodaysWorkout = (): WorkoutSession => {
     const today = new Date().getDay() // 0 = Sunday, 1 = Monday, etc.
     
     // Monday = Heavy, Wednesday = Light, Friday = Medium
@@ -24,7 +50,7 @@ export default function PTCommand() {
         description: '90-100% Training Max • Max effort singles',
         exercises: [
           {
-            name: 'deadlift' as const,
+            name: 'deadlift',
             sets: [
               { set_number: 1, prescribed_weight: 315, prescribed_reps: 5, actual_weight: 315, actual_reps: 5, completed: true },
               { set_number: 2, prescribed_weight: 360, prescribed_reps: 3, actual_weight: 360, actual_reps: 3, completed: true },
@@ -33,7 +59,7 @@ export default function PTCommand() {
             ]
           },
           {
-            name: 'bench_press' as const,
+            name: 'bench_press',
             sets: [
               { set_number: 1, prescribed_weight: 225, prescribed_reps: 5, actual_weight: 225, actual_reps: 5, completed: false },
               { set_number: 2, prescribed_weight: 245, prescribed_reps: 3, actual_weight: 245, actual_reps: 3, completed: false },
@@ -42,7 +68,7 @@ export default function PTCommand() {
             ]
           },
           {
-            name: 'kettlebell_swings' as const,
+            name: 'kettlebell_swings',
             sets: [
               { set_number: 1, prescribed_weight: 35, prescribed_reps: 20, actual_weight: 35, actual_reps: 20, completed: false },
               { set_number: 2, prescribed_weight: 35, prescribed_reps: 20, actual_weight: 35, actual_reps: 20, completed: false },
@@ -59,7 +85,7 @@ export default function PTCommand() {
         description: '60-70% Training Max • Volume work',
         exercises: [
           {
-            name: 'squat' as const,
+            name: 'squat',
             sets: [
               { set_number: 1, prescribed_weight: 190, prescribed_reps: 8, actual_weight: 190, actual_reps: 8, completed: false },
               { set_number: 2, prescribed_weight: 205, prescribed_reps: 6, actual_weight: 205, actual_reps: 6, completed: false },
@@ -68,7 +94,7 @@ export default function PTCommand() {
             ]
           },
           {
-            name: 'overhead_press' as const,
+            name: 'overhead_press',
             sets: [
               { set_number: 1, prescribed_weight: 135, prescribed_reps: 8, actual_weight: 135, actual_reps: 8, completed: false },
               { set_number: 2, prescribed_weight: 145, prescribed_reps: 6, actual_weight: 145, actual_reps: 6, completed: false },
@@ -77,8 +103,8 @@ export default function PTCommand() {
             ]
           },
           {
-            name: 'kettlebell_swings' as const,
-            sets: Array.from({length: 10}, (_, i) => ({
+            name: 'kettlebell_swings',
+            sets: Array.from({length: 10}, (_: unknown, i: number): WorkoutSet => ({
               set_number: i + 1, 
               prescribed_weight: 35, 
               prescribed_reps: 20, 
@@ -97,7 +123,7 @@ export default function PTCommand() {
         description: '70-85% Training Max • Moderate intensity',
         exercises: [
           {
-            name: 'squat' as const,
+            name: 'squat',
             sets: [
               { set_number: 1, prescribed_weight: 220, prescribed_reps: 5, actual_weight: 220, actual_reps: 5, completed: false },
               { set_number: 2, prescribed_weight: 235, prescribed_reps: 3, actual_weight: 235, actual_reps: 3, completed: false },
@@ -106,7 +132,7 @@ export default function PTCommand() {
             ]
           },
           {
-            name: 'overhead_press' as const,
+            name: 'overhead_press',
             sets: [
               { set_number: 1, prescribed_weight: 145, prescribed_reps: 5, actual_weight: 145, actual_reps: 5, completed: false },
               { set_number: 2, prescribed_weight: 155, prescribed_reps: 3, actual_weight: 155, actual_reps: 3, completed: false },
@@ -115,8 +141,8 @@ export default function PTCommand() {
             ]
           },
           {
-            name: 'kettlebell_swings' as const,
-            sets: Array.from({length: 10}, (_, i) => ({
+            name: 'kettlebell_swings',
+            sets: Array.from({length: 10}, (_: unknown, i: number): WorkoutSet => ({
               set_number: i + 1, 
               prescribed_weight: 35, 
               prescribed_reps: 10, 
@@ -139,26 +165,25 @@ export default function PTCommand() {
     }
   }
 
-  // Initialize today's workout
-  const todaysWorkout = getTodaysWorkout()
   useEffect(() => {
     // Initialize today's workout and set start time
-    setCurrentSession(todaysWorkout)
+    const workout = getTodaysWorkout()
+    setCurrentSession(workout)
     setWorkoutStartTime(Date.now())
-  }, [])
+  }, []) // Empty dependency array is intentional - we only want this to run once
 
   // Timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
+    let interval: number | undefined
     if (isTimerRunning && restTimer > 0) {
-      interval = setInterval(() => {
-        setRestTimer(timer => timer - 1)
+      interval = window.setInterval(() => {
+        setRestTimer((timer: number) => timer - 1)
       }, 1000)
     } else if (restTimer === 0 && isTimerRunning) {
       setIsTimerRunning(false)
     }
     return () => {
-      if (interval) clearInterval(interval)
+      if (interval) window.clearInterval(interval)
     }
   }, [isTimerRunning, restTimer])
 
@@ -174,40 +199,40 @@ export default function PTCommand() {
     return formatTime(elapsed)
   }
 
-  const getCurrentSet = () => {
+  const getCurrentSet = (): (WorkoutSet & { index: number }) | null => {
     if (!currentSession || !currentSession.exercises) return null
     const exercise = currentSession.exercises[currentExercise]
     if (!exercise) return null
-    const currentSetIndex = exercise.sets.findIndex(set => !set.completed)
+    const currentSetIndex = exercise.sets.findIndex((set: WorkoutSet) => !set.completed)
     return currentSetIndex !== -1 ? { ...exercise.sets[currentSetIndex], index: currentSetIndex } : null
   }
 
-  const updateSetWeight = (weight: number) => {
+  const updateSetWeight = (weight: number): void => {
     if (!currentSession) return
     const currentSet = getCurrentSet()
     if (!currentSet) return
 
-    const newSession = { ...currentSession }
+    const newSession: WorkoutSession = { ...currentSession }
     newSession.exercises[currentExercise].sets[currentSet.index].actual_weight = weight
     setCurrentSession(newSession)
   }
 
-  const updateSetReps = (reps: number) => {
+  const updateSetReps = (reps: number): void => {
     if (!currentSession) return
     const currentSet = getCurrentSet()
     if (!currentSet) return
 
-    const newSession = { ...currentSession }
+    const newSession: WorkoutSession = { ...currentSession }
     newSession.exercises[currentExercise].sets[currentSet.index].actual_reps = reps
     setCurrentSession(newSession)
   }
 
-  const completeSet = (actualWeight: number, actualReps: number) => {
+  const completeSet = (actualWeight: number, actualReps: number): void => {
     if (!currentSession) return
     const currentSet = getCurrentSet()
     if (!currentSet) return
 
-    const newSession = { ...currentSession }
+    const newSession: WorkoutSession = { ...currentSession }
     const exercise = newSession.exercises[currentExercise]
     exercise.sets[currentSet.index] = {
       ...exercise.sets[currentSet.index],
@@ -219,7 +244,7 @@ export default function PTCommand() {
     setCurrentSession(newSession)
     
     // Start rest timer based on exercise
-    const exerciseName = exercise.name
+    const exerciseName = exercise.name as ExerciseName
     if (exerciseName === 'deadlift') {
       setRestTimer(240) // 4 minutes
       setIsTimerRunning(true)
@@ -236,48 +261,62 @@ export default function PTCommand() {
     // KB swings don't get rest timer
   }
 
-  const endSession = () => {
-    if (confirm('Are you sure you want to end this session? Your progress will be saved.')) {
+  const endSession = (): void => {
+    if (window.confirm('Are you sure you want to end this session? Your progress will be saved.')) {
       // In real app, this would save to database
-      alert('Session ended and progress saved!')
+      window.alert('Session ended and progress saved!')
       // Could navigate to history or reset to new session
     }
   }
 
-  const nextExercise = () => {
+  const nextExercise = (): void => {
+    if (!currentSession) return
     if (currentExercise < currentSession.exercises.length - 1) {
       setCurrentExercise(currentExercise + 1)
       setRestTimer(0)
       setIsTimerRunning(false)
     } else {
       // Session complete
-      if (confirm('Congratulations! Session complete. Mark as finished?')) {
-        alert('🎉 Session completed successfully! Great work!')
+      if (window.confirm('Congratulations! Session complete. Mark as finished?')) {
+        window.alert('🎉 Session completed successfully! Great work!')
         // In real app, would save completion to database
       }
     }
   }
 
-  const isSessionComplete = () => {
+  const isSessionComplete = (): boolean => {
     if (!currentSession || !currentSession.exercises) return false
-    return currentSession.exercises.every(exercise => 
-      exercise.sets.every(set => set.completed)
+    return currentSession.exercises.every((exercise: Exercise) => 
+      exercise.sets.every((set: WorkoutSet) => set.completed)
     )
   }
 
-  const getCompletedSets = () => {
-    return currentSession.exercises[currentExercise]?.sets.filter(set => set.completed) || []
+  const getCompletedSets = (): WorkoutSet[] => {
+    if (!currentSession || !currentSession.exercises) return []
+    const currentExerciseData = currentSession.exercises[currentExercise]
+    if (!currentExerciseData) return []
+    return currentExerciseData.sets.filter((set: WorkoutSet) => set.completed)
   }
 
   const getExerciseDisplayName = (name: string): string => {
-    const names = {
+    const names: Record<string, string> = {
       'deadlift': 'Deadlifts',
       'bench_press': 'Bench Press',
       'overhead_press': 'Overhead Press',
       'squat': 'Squats',
       'kettlebell_swings': 'Kettlebell Swings'
     }
-    return names[name as keyof typeof names] || name
+    return names[name] || name
+  }
+
+  const handleWeightChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    const value = parseInt(e.target.value) || 0
+    updateSetWeight(value)
+  }
+
+  const handleRepsChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    const value = parseInt(e.target.value) || 0
+    updateSetReps(value)
   }
 
   return (
@@ -318,7 +357,7 @@ export default function PTCommand() {
             </div>
             {currentSession?.exercises && currentSession.exercises.length > 0 ? (
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {currentSession.exercises.map((exercise, index) => (
+                {currentSession.exercises.map((exercise: Exercise, index: number) => (
                   <span key={index} style={{ 
                     backgroundColor: '#374151', 
                     color: '#facc15', 
@@ -327,7 +366,7 @@ export default function PTCommand() {
                     fontSize: '12px', 
                     fontFamily: 'monospace' 
                   }}>
-                    {getExerciseDisplayName(exercise.name)} {exercise.sets.length}×{exercise.sets[0]?.prescribed_reps}
+                    {getExerciseDisplayName(exercise.name)} {exercise.sets.length}×{exercise.sets[0]?.prescribed_reps || 0}
                   </span>
                 ))}
               </div>
@@ -347,7 +386,7 @@ export default function PTCommand() {
               { id: 'program' as const, label: 'Program' },
               { id: 'history' as const, label: 'History' },
               { id: 'progress' as const, label: 'Progress' }
-            ].map(tab => (
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -379,7 +418,7 @@ export default function PTCommand() {
                   </button>
                 </div>
               </div>
-            ) : currentSession?.exercises && (
+            ) : currentSession?.exercises && currentSession.exercises.length > 0 && (
               // Workout Content
               <div className="pt-card">
                 
@@ -387,7 +426,7 @@ export default function PTCommand() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                   <div style={{ borderLeft: `4px solid ${currentSession.color}`, paddingLeft: '16px' }}>
                     <h3 style={{ fontSize: '24px', fontWeight: '600', margin: '0 0 4px 0', color: '#f1f5f9' }}>
-                      {getExerciseDisplayName(currentSession.exercises[currentExercise]?.name)}
+                      {getExerciseDisplayName(currentSession.exercises[currentExercise]?.name || '')}
                     </h3>
                     <p style={{ margin: 0, fontSize: '14px', color: '#94a3b8' }}>
                       {currentSession.description} • Exercise {currentExercise + 1} of {currentSession.exercises.length}
@@ -417,7 +456,7 @@ export default function PTCommand() {
                           onClick={nextExercise}
                           className="pt-button-primary"
                         >
-                          {currentExercise < currentSession.exercises.length - 1 ? 'Next Exercise' : 'Finish Session'}
+                          {currentExercise < (currentSession?.exercises.length || 0) - 1 ? 'Next Exercise' : 'Finish Session'}
                         </button>
                       </div>
                     )
@@ -426,11 +465,11 @@ export default function PTCommand() {
                   return (
                     <div>
                       {/* Current Set */}
-                      <div style={{ border: `2px solid ${currentSession.color}`, borderRadius: '12px', padding: '24px', marginBottom: '16px', backgroundColor: '#1a1a2e' }}>
+                      <div style={{ border: `2px solid ${currentSession?.color || '#64748b'}`, borderRadius: '12px', padding: '24px', marginBottom: '16px', backgroundColor: '#1a1a2e' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                           <div>
                             <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
-                              Set {currentSet.index + 1} of {currentSession.exercises[currentExercise].sets.length}
+                              Set {currentSet.index + 1} of {currentSession?.exercises[currentExercise]?.sets.length || 0}
                             </div>
                             <div style={{ fontSize: '24px', fontWeight: '600', color: '#f1f5f9' }}>
                               Prescribed: {currentSet.prescribed_weight} lbs × {currentSet.prescribed_reps}
@@ -439,7 +478,7 @@ export default function PTCommand() {
                           {restTimer > 0 && (
                             <div style={{ textAlign: 'right' }}>
                               <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>Rest Timer</div>
-                              <div style={{ fontSize: '20px', fontWeight: 'bold', color: currentSession.color, fontFamily: 'monospace' }}>
+                              <div style={{ fontSize: '20px', fontWeight: 'bold', color: currentSession?.color || '#64748b', fontFamily: 'monospace' }}>
                                 {formatTime(restTimer)}
                               </div>
                             </div>
@@ -458,7 +497,7 @@ export default function PTCommand() {
                               <input
                                 type="number"
                                 value={currentSet.actual_weight || ''}
-                                onChange={(e) => updateSetWeight(parseInt(e.target.value) || 0)}
+                                onChange={handleWeightChange}
                                 style={{ 
                                   width: '100%', 
                                   padding: '8px', 
@@ -480,7 +519,7 @@ export default function PTCommand() {
                               <input
                                 type="number"
                                 value={currentSet.actual_reps || ''}
-                                onChange={(e) => updateSetReps(parseInt(e.target.value) || 0)}
+                                onChange={handleRepsChange}
                                 style={{ 
                                   width: '100%', 
                                   padding: '8px', 
@@ -546,7 +585,7 @@ export default function PTCommand() {
                             Completed Sets
                           </h4>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {getCompletedSets().map((set, index) => (
+                            {getCompletedSets().map((set: WorkoutSet, index: number) => (
                               <div key={index} style={{ 
                                 border: '1px solid #22c55e', 
                                 borderRadius: '8px', 
@@ -585,11 +624,11 @@ export default function PTCommand() {
                         </button>
                         <button
                           onClick={nextExercise}
-                          disabled={isSessionComplete() && currentExercise >= currentSession.exercises.length - 1}
+                          disabled={isSessionComplete() && currentExercise >= (currentSession?.exercises.length || 0) - 1}
                           style={{
                             flex: 2,
                             padding: '12px',
-                            backgroundColor: isSessionComplete() ? '#22c55e' : currentSession.color,
+                            backgroundColor: isSessionComplete() ? '#22c55e' : currentSession?.color,
                             color: isSessionComplete() ? '#fff' : '#000',
                             border: 'none',
                             borderRadius: '8px',
@@ -598,7 +637,7 @@ export default function PTCommand() {
                           }}
                         >
                           {isSessionComplete() ? '🎉 Session Complete!' : 
-                           currentExercise >= currentSession.exercises.length - 1 ? 'Finish Session' : 'Next Exercise'}
+                           currentExercise >= (currentSession?.exercises.length || 0) - 1 ? 'Finish Session' : 'Next Exercise'}
                         </button>
                       </div>
                     </div>
@@ -609,579 +648,42 @@ export default function PTCommand() {
           </div>
         )}
 
+        {/* Program Tab Content */}
+        {activeTab === 'program' && (
+          <div className="pt-card" style={{ textAlign: 'center', padding: '48px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>⚡</div>
+            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#f1f5f9' }}>
+              Program Module
+            </h3>
+            <p style={{ color: '#94a3b8', margin: 0 }}>
+              Under construction - focus on Today tab for workout logging
+            </p>
+          </div>
+        )}
+
+        {/* History Tab Content */}
+        {activeTab === 'history' && (
+          <div className="pt-card" style={{ textAlign: 'center', padding: '48px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>⚡</div>
+            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#f1f5f9' }}>
+              History Module
+            </h3>
+            <p style={{ color: '#94a3b8', margin: 0 }}>
+              Under construction - focus on Today tab for workout logging
+            </p>
+          </div>
+        )}
+
         {/* Progress Tab Content */}
         {activeTab === 'progress' && (
-          <div>
-            {/* Weekly Progress Overview */}
-            <div className="pt-card" style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px', color: '#f1f5f9' }}>
-                Weekly Progress
-              </h2>
-              <p style={{ color: '#94a3b8', marginBottom: '20px' }}>
-                H/M/L completion rate and consistency tracking
-              </p>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-                {/* Current Week */}
-                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', border: '2px solid #eab308' }}>
-                  <div style={{ fontSize: '16px', fontWeight: '600', color: '#eab308', marginBottom: '12px' }}>
-                    Week 16 (Current)
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: '#f1f5f9' }}>Heavy Day</span>
-                    <span style={{ color: '#22c55e', fontWeight: '600' }}>✓ Completed</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: '#f1f5f9' }}>Light Day</span>
-                    <span style={{ color: '#94a3b8' }}>○ Scheduled</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <span style={{ color: '#f1f5f9' }}>Medium Day</span>
-                    <span style={{ color: '#94a3b8' }}>○ Scheduled</span>
-                  </div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#eab308' }}>
-                    Progress: 1/3 (33%)
-                  </div>
-                </div>
-
-                {/* Previous Weeks */}
-                {[
-                  { week: 15, heavy: true, light: true, medium: true, percentage: 100 },
-                  { week: 14, heavy: true, light: false, medium: true, percentage: 67 },
-                  { week: 13, heavy: true, light: true, medium: true, percentage: 100 }
-                ].map((week, index) => (
-                  <div key={index} style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', border: '1px solid #374151' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#f1f5f9', marginBottom: '12px' }}>
-                      Week {week.week}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <span style={{ color: '#f1f5f9' }}>Heavy Day</span>
-                      <span style={{ color: week.heavy ? '#22c55e' : '#ef4444', fontWeight: '600' }}>
-                        {week.heavy ? '✓' : '✗'} {week.heavy ? 'Completed' : 'Missed'}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <span style={{ color: '#f1f5f9' }}>Light Day</span>
-                      <span style={{ color: week.light ? '#22c55e' : '#ef4444', fontWeight: '600' }}>
-                        {week.light ? '✓' : '✗'} {week.light ? 'Completed' : 'Missed'}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <span style={{ color: '#f1f5f9' }}>Medium Day</span>
-                      <span style={{ color: week.medium ? '#22c55e' : '#ef4444', fontWeight: '600' }}>
-                        {week.medium ? '✓' : '✗'} {week.medium ? 'Completed' : 'Missed'}
-                      </span>
-                    </div>
-                    <div style={{ 
-                      fontSize: '14px', 
-                      fontWeight: '600', 
-                      color: week.percentage === 100 ? '#22c55e' : week.percentage >= 67 ? '#eab308' : '#ef4444'
-                    }}>
-                      Completion: {week.percentage}%
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Strength Progression */}
-            <div className="pt-card" style={{ marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
-                Strength Progression (Last 12 Weeks)
-              </h3>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-                {/* Deadlift Progression */}
-                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', border: '1px solid #374151' }}>
-                  <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#ef4444', marginBottom: '16px' }}>
-                    Deadlift Progression
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {[
-                      { week: 'Week 16', weight: 450, change: '+15' },
-                      { week: 'Week 13', weight: 435, change: '+10' },
-                      { week: 'Week 10', weight: 425, change: '+15' },
-                      { week: 'Week 7', weight: 410, change: '+5' },
-                      { week: 'Week 4', weight: 405, change: '+10' }
-                    ].map((entry, index) => (
-                      <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#94a3b8', fontSize: '14px' }}>{entry.week}</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ color: '#f1f5f9', fontWeight: '600', fontFamily: 'monospace' }}>
-                            {entry.weight} lbs
-                          </span>
-                          <span style={{ color: '#22c55e', fontSize: '12px', fontFamily: 'monospace' }}>
-                            +{entry.change}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ marginTop: '12px', padding: '8px', backgroundColor: '#374151', borderRadius: '4px' }}>
-                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>Total Gain (12 weeks)</div>
-                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#22c55e' }}>+45 lbs</div>
-                  </div>
-                </div>
-
-                {/* Bench Press Progression */}
-                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', border: '1px solid #374151' }}>
-                  <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#3b82f6', marginBottom: '16px' }}>
-                    Bench Press Progression
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {[
-                      { week: 'Week 16', weight: 275, change: '+10' },
-                      { week: 'Week 13', weight: 265, change: '+10' },
-                      { week: 'Week 10', weight: 255, change: '+5' },
-                      { week: 'Week 7', weight: 250, change: '+10' },
-                      { week: 'Week 4', weight: 240, change: '+5' }
-                    ].map((entry, index) => (
-                      <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#94a3b8', fontSize: '14px' }}>{entry.week}</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ color: '#f1f5f9', fontWeight: '600', fontFamily: 'monospace' }}>
-                            {entry.weight} lbs
-                          </span>
-                          <span style={{ color: '#22c55e', fontSize: '12px', fontFamily: 'monospace' }}>
-                            +{entry.change}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ marginTop: '12px', padding: '8px', backgroundColor: '#374151', borderRadius: '4px' }}>
-                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>Total Gain (12 weeks)</div>
-                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#22c55e' }}>+35 lbs</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Training Analytics */}
-            <div className="pt-card">
-              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
-                Training Analytics
-              </h3>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                {/* Consistency */}
-                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#22c55e', marginBottom: '8px' }}>
-                    89%
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#94a3b8' }}>
-                    Consistency Rate
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px' }}>
-                    34/38 sessions completed
-                  </div>
-                </div>
-
-                {/* Average Session Time */}
-                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#eab308', marginBottom: '8px' }}>
-                    46m
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#94a3b8' }}>
-                    Avg Session Time
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
-                    Range: 32-58 minutes
-                  </div>
-                </div>
-
-                {/* Volume Increase */}
-                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#3b82f6', marginBottom: '8px' }}>
-                    +23%
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#94a3b8' }}>
-                    Volume Increase
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#3b82f6', marginTop: '4px' }}>
-                    vs. 12 weeks ago
-                  </div>
-                </div>
-
-                {/* Current Streak */}
-                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '8px' }}>
-                    7
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#94a3b8' }}>
-                    Week Streak
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#f59e0b', marginTop: '4px' }}>
-                    Personal best!
-                  </div>
-                </div>
-              </div>
-
-              {/* Goals */}
-              <div style={{ marginTop: '24px' }}>
-                <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#f1f5f9', marginBottom: '12px' }}>
-                  Current Goals
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {[
-                    { goal: 'Deadlift 500 lbs', current: 450, target: 500, progress: 90 },
-                    { goal: 'Bench Press 300 lbs', current: 275, target: 300, progress: 92 },
-                    { goal: 'Complete 4 weeks straight', current: 7, target: 4, progress: 100, completed: true }
-                  ].map((goal, index) => (
-                    <div key={index} style={{ 
-                      backgroundColor: '#1a1a2e', 
-                      padding: '12px', 
-                      borderRadius: '6px',
-                      border: goal.completed ? '1px solid #22c55e' : '1px solid #374151'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#f1f5f9' }}>
-                          {goal.goal}
-                          {goal.completed && <span style={{ marginLeft: '8px', color: '#22c55e' }}>🎉</span>}
-                        </span>
-                        <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>
-                          {goal.progress}%
-                        </span>
-                      </div>
-                      <div style={{ 
-                        width: '100%', 
-                        height: '4px', 
-                        backgroundColor: '#374151', 
-                        borderRadius: '2px',
-                        overflow: 'hidden'
-                      }}>
-                        <div style={{ 
-                          width: `${goal.progress}%`, 
-                          height: '100%', 
-                          backgroundColor: goal.completed ? '#22c55e' : '#eab308',
-                          transition: 'width 0.3s ease'
-                        }} />
-                      </div>
-                      {!goal.completed && (
-                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
-                          {typeof goal.current === 'number' && typeof goal.target === 'number' ? 
-                            `${goal.target - goal.current} lbs to go` : 
-                            'In progress'
-                          }
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        {activeTab === 'history' && (
-          <div>
-            {/* Recent Sessions */}
-            <div className="pt-card" style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px', color: '#f1f5f9' }}>
-                Recent Sessions
-              </h2>
-              <p style={{ color: '#94a3b8', marginBottom: '20px' }}>
-                Your last 10 workouts with completion status and key lifts
-              </p>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {[
-                  { date: '2026-04-16', type: 'Heavy', completed: true, deadlift: '425×1', bench: '275×1', duration: '52 min', pr: true },
-                  { date: '2026-04-14', type: 'Light', completed: true, squat: '225×4×2', ohp: '135×4×2', duration: '38 min', pr: false },
-                  { date: '2026-04-12', type: 'Medium', completed: true, squat: '265×1', ohp: '155×1', duration: '45 min', pr: false },
-                  { date: '2026-04-09', type: 'Heavy', completed: true, deadlift: '405×1', bench: '265×1', duration: '48 min', pr: false },
-                  { date: '2026-04-07', type: 'Light', completed: false, squat: '215×6', ohp: '125×6', duration: '25 min', pr: false },
-                  { date: '2026-04-05', type: 'Medium', completed: true, squat: '255×1', ohp: '150×1', duration: '42 min', pr: false }
-                ].map((session, index) => (
-                  <div key={index} style={{ 
-                    border: `1px solid ${session.completed ? '#22c55e' : '#ef4444'}`, 
-                    borderRadius: '8px', 
-                    padding: '16px', 
-                    backgroundColor: session.completed ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div>
-                          <div style={{ fontSize: '16px', fontWeight: '600', color: '#f1f5f9' }}>
-                            {session.type} Day
-                            {session.pr && <span style={{ marginLeft: '8px', fontSize: '12px', color: '#eab308', fontWeight: 'bold' }}>🏆 PR!</span>}
-                          </div>
-                          <div style={{ fontSize: '14px', color: '#94a3b8' }}>
-                            {new Date(session.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ 
-                          fontSize: '12px', 
-                          color: session.completed ? '#22c55e' : '#ef4444',
-                          fontWeight: '600'
-                        }}>
-                          {session.completed ? '✓ COMPLETED' : '✗ INCOMPLETE'}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                          {session.duration}
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                      {session.deadlift && (
-                        <span style={{ backgroundColor: '#374151', color: '#facc15', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
-                          Dead: {session.deadlift}
-                        </span>
-                      )}
-                      {session.bench && (
-                        <span style={{ backgroundColor: '#374151', color: '#facc15', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
-                          Bench: {session.bench}
-                        </span>
-                      )}
-                      {session.squat && (
-                        <span style={{ backgroundColor: '#374151', color: '#facc15', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
-                          Squat: {session.squat}
-                        </span>
-                      )}
-                      {session.ohp && (
-                        <span style={{ backgroundColor: '#374151', color: '#facc15', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
-                          OHP: {session.ohp}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Personal Records */}
-            <div className="pt-card">
-              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
-                Personal Records
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
-                {[
-                  { 
-                    exercise: 'Deadlift', 
-                    current: 450, 
-                    previous: 435, 
-                    date: '2026-04-16',
-                    trend: 'up'
-                  },
-                  { 
-                    exercise: 'Bench Press', 
-                    current: 275, 
-                    previous: 265, 
-                    date: '2026-04-16',
-                    trend: 'up'
-                  },
-                  { 
-                    exercise: 'Squat', 
-                    current: 315, 
-                    previous: 315, 
-                    date: '2026-03-28',
-                    trend: 'same'
-                  },
-                  { 
-                    exercise: 'Overhead Press', 
-                    current: 185, 
-                    previous: 180, 
-                    date: '2026-04-03',
-                    trend: 'up'
-                  }
-                ].map((pr, index) => (
-                  <div key={index} style={{ 
-                    backgroundColor: '#1a1a2e', 
-                    padding: '16px', 
-                    borderRadius: '8px', 
-                    border: `2px solid ${pr.trend === 'up' ? '#22c55e' : pr.trend === 'same' ? '#eab308' : '#ef4444'}`
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                      <div style={{ fontSize: '16px', fontWeight: '600', color: '#f1f5f9' }}>
-                        {pr.exercise}
-                      </div>
-                      <div style={{ 
-                        fontSize: '20px',
-                        color: pr.trend === 'up' ? '#22c55e' : pr.trend === 'same' ? '#eab308' : '#ef4444'
-                      }}>
-                        {pr.trend === 'up' ? '📈' : pr.trend === 'same' ? '➖' : '📉'}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#f1f5f9', marginBottom: '4px' }}>
-                      {pr.current} lbs
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>
-                      Previous: {pr.previous} lbs
-                      {pr.trend === 'up' && (
-                        <span style={{ color: '#22c55e', marginLeft: '8px' }}>
-                          (+{pr.current - pr.previous})
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                      {new Date(pr.date).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-        {activeTab === 'program' && (
-          <div>
-            {/* Program Overview */}
-            <div className="pt-card" style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px', color: '#f1f5f9' }}>
-                H/M/L Training Programs
-              </h2>
-              <p style={{ color: '#94a3b8', marginBottom: '20px' }}>
-                Heavy/Medium/Light protocol with progressive overload. Customize your upcoming workouts.
-              </p>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-                {/* Heavy Day Program */}
-                <div style={{ border: '1px solid #374151', borderRadius: '12px', padding: '16px', backgroundColor: '#1a1a2e' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#ef4444', margin: 0 }}>Heavy Day</h3>
-                    <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>Monday</span>
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '16px' }}>
-                    90-100% Training Max • Max effort singles
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
-                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>Deadlifts</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>70%×5, 80%×3, 90%×1, 94%×1</div>
-                    </div>
-                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
-                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>Bench Press</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>70%×5, 80%×3, 90%×1, 94%×1</div>
-                    </div>
-                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
-                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>KB Swings</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>3×20 for time</div>
-                    </div>
-                  </div>
-                  <button className="pt-button-primary" style={{ width: '100%', marginTop: '12px', fontSize: '14px' }}>
-                    Edit Program
-                  </button>
-                </div>
-
-                {/* Light Day Program */}
-                <div style={{ border: '1px solid #374151', borderRadius: '12px', padding: '16px', backgroundColor: '#1a1a2e' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#22c55e', margin: 0 }}>Light Day</h3>
-                    <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>Wednesday</span>
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '16px' }}>
-                    60-70% Training Max • Volume work
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
-                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>Squats</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>60%×8, 65%×6, 70%×4, 70%×4</div>
-                    </div>
-                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
-                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>Overhead Press</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>60%×8, 65%×6, 70%×4, 70%×4</div>
-                    </div>
-                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
-                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>KB Swings</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>10×20, 1min rest</div>
-                    </div>
-                  </div>
-                  <button className="pt-button-primary" style={{ width: '100%', marginTop: '12px', fontSize: '14px' }}>
-                    Edit Program
-                  </button>
-                </div>
-
-                {/* Medium Day Program */}
-                <div style={{ border: '1px solid #374151', borderRadius: '12px', padding: '16px', backgroundColor: '#1a1a2e' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#eab308', margin: 0 }}>Medium Day</h3>
-                    <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>Friday</span>
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '16px' }}>
-                    70-85% Training Max • Moderate intensity
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
-                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>Squats</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>70%×5, 75%×3, 80%×1, 85%×1</div>
-                    </div>
-                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
-                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>Overhead Press</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>70%×5, 75%×3, 80%×1, 85%×1</div>
-                    </div>
-                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
-                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>KB Swings</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>10×10, 1min rest</div>
-                    </div>
-                  </div>
-                  <button className="pt-button-primary" style={{ width: '100%', marginTop: '12px', fontSize: '14px' }}>
-                    Edit Program
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 1RM Settings */}
-            <div className="pt-card">
-              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
-                Training Maxes (90% of 1RM)
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                {[
-                  { exercise: 'Deadlift', oneRM: 450, trainingMax: 405 },
-                  { exercise: 'Bench Press', oneRM: 275, trainingMax: 250 },
-                  { exercise: 'Squat', oneRM: 315, trainingMax: 285 },
-                  { exercise: 'Overhead Press', oneRM: 185, trainingMax: 170 }
-                ].map((lift, index) => (
-                  <div key={index} style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', border: '1px solid #374151' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#f1f5f9', marginBottom: '8px' }}>
-                      {lift.exercise}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
-                          1RM
-                        </label>
-                        <input
-                          type="number"
-                          value={lift.oneRM}
-                          style={{ 
-                            width: '100%', 
-                            padding: '6px 8px', 
-                            backgroundColor: '#374151',
-                            border: '1px solid #4b5563',
-                            borderRadius: '4px',
-                            color: '#f1f5f9',
-                            fontSize: '14px'
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
-                          Training Max
-                        </label>
-                        <input
-                          type="number"
-                          value={lift.trainingMax}
-                          style={{ 
-                            width: '100%', 
-                            padding: '6px 8px', 
-                            backgroundColor: '#374151',
-                            border: '1px solid #4b5563',
-                            borderRadius: '4px',
-                            color: '#f1f5f9',
-                            fontSize: '14px'
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button className="pt-button-primary" style={{ marginTop: '16px' }}>
-                Update Training Maxes
-              </button>
-            </div>
+          <div className="pt-card" style={{ textAlign: 'center', padding: '48px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>⚡</div>
+            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#f1f5f9' }}>
+              Progress Module
+            </h3>
+            <p style={{ color: '#94a3b8', margin: 0 }}>
+              Under construction - focus on Today tab for workout logging
+            </p>
           </div>
         )}
 
