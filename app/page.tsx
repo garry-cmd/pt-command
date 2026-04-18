@@ -257,10 +257,10 @@ export default function PTCommand() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-hull-950 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-100">Loading PT Command...</p>
+          <div className="w-8 h-8 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading PT Command...</p>
         </div>
       </div>
     )
@@ -281,39 +281,39 @@ export default function PTCommand() {
   }
 
   return (
-    <div className="min-h-screen bg-hull-950">
+    <div className="min-h-screen bg-slate-950">
       <div className="max-w-4xl mx-auto px-6 py-6">
         
         {/* Header */}
-        <div className="naval-card p-6 mb-6">
+        <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-navy-50 mb-1">
+              <h1 className="text-2xl font-bold text-white mb-1">
                 PT Command
               </h1>
-              <p className="text-muted-100 text-sm">
+              <p className="text-slate-400 text-sm">
                 Heavy/Medium/Light Training Protocol
               </p>
             </div>
-            <div className="status-warning px-3 py-2 rounded-lg text-sm font-mono font-semibold">
+            <div className="bg-yellow-600 text-black px-3 py-2 rounded-lg text-sm font-mono font-semibold">
               Week 3 - Monday
             </div>
           </div>
 
           {/* Session Preview */}
-          <div className="border-t border-hull-800 pt-4">
+          <div className="border-t border-slate-700 pt-4">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-sm font-semibold text-amber-500">
+              <h3 className="text-sm font-semibold text-yellow-500">
                 Today: Heavy Day
               </h3>
-              <div className="text-xs text-muted-100 font-mono">
+              <div className="text-xs text-slate-400 font-mono">
                 Workout time: {getTotalWorkoutTime()}
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <span className="weight-badge-heavy">Dead 425×1</span>
-              <span className="weight-badge-heavy">Bench 275×1</span>
-              <span className="status-warning px-2 py-1 rounded text-xs font-mono font-semibold">
+              <span className="bg-slate-600 text-yellow-300 px-2 py-1 rounded text-xs font-mono">Dead 425×1</span>
+              <span className="bg-slate-600 text-yellow-300 px-2 py-1 rounded text-xs font-mono">Bench 275×1</span>
+              <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-mono font-semibold">
                 KB 3×20
               </span>
             </div>
@@ -321,7 +321,7 @@ export default function PTCommand() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="naval-card p-2 mb-6">
+        <div className="bg-slate-900 border border-slate-700 rounded-xl p-2 mb-6">
           <div className="flex gap-1">
             {[
               { id: 'today' as const, label: 'Today' },
@@ -332,8 +332,10 @@ export default function PTCommand() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`nav-tab ${
-                  activeTab === tab.id ? 'nav-tab-active' : 'nav-tab-inactive'
+                className={`flex-1 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 cursor-pointer ${
+                  activeTab === tab.id 
+                    ? 'bg-yellow-500 text-black font-semibold' 
+                    : 'text-slate-400 hover:bg-slate-800'
                 }`}
               >
                 {tab.label}
@@ -344,23 +346,23 @@ export default function PTCommand() {
 
         {/* Today Tab Content */}
         {activeTab === 'today' && currentSession && (
-          <div className="naval-card p-6">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6">
             
             {/* Exercise Header */}
             <div className="flex items-center justify-between mb-6">
-              <div className="exercise-indicator">
-                <h3 className="text-xl font-semibold text-navy-50 mb-1">
+              <div className="pl-4 border-l-4 border-yellow-500">
+                <h3 className="text-xl font-semibold text-white mb-1">
                   {getExerciseDisplayName(currentSession.exercises[currentExercise]?.name)}
                 </h3>
-                <p className="text-sm text-muted-100">
+                <p className="text-sm text-slate-400">
                   Heavy Day (90-100%) • Next: {getNextExercise()?.name ? getExerciseDisplayName(getNextExercise()!.name) : 'Session Complete'}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-3xl font-bold text-amber-500">
+                <span className="text-3xl font-bold text-yellow-500">
                   {getCompletedSets().length}/{currentSession.exercises[currentExercise]?.sets.length || 0}
                 </span>
-                <span className="text-sm text-muted-100">sets</span>
+                <span className="text-sm text-slate-400">sets</span>
               </div>
             </div>
 
