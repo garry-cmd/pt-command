@@ -1,148 +1,52 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import type { User } from '@supabase/supabase-js'
-import type { WorkoutSession, WorkoutExercise, WorkoutSetData, ExerciseName } from '@/types/database'
+import './globals.css'
 
 export default function PTCommand() {
-  const [user, setUser] = useState<User | null>(null)
   const [activeTab, setActiveTab] = useState<'today' | 'program' | 'history' | 'progress'>('today')
-  const [loading, setLoading] = useState(true)
-  
-  // Workout state
-  const [currentSession, setCurrentSession] = useState<WorkoutSession | null>(null)
   const [currentExercise, setCurrentExercise] = useState(0)
   const [restTimer, setRestTimer] = useState(0)
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [workoutStartTime, setWorkoutStartTime] = useState<number | null>(null)
 
-  const supabase = createClient()
-
-  // Mock data - will be replaced with Supabase data
-  const mockSession: WorkoutSession = {
+  // Mock workout session
+  const currentSession = {
     id: 'mock-session',
-    workout_type: 'heavy',
+    workout_type: 'heavy' as const,
     week_number: 3,
     exercises: [
       {
-        name: 'deadlift',
+        name: 'deadlift' as const,
         sets: [
-          { 
-            set_number: 1, 
-            prescribed_weight: 315, 
-            prescribed_reps: 5, 
-            actual_weight: 315, 
-            actual_reps: 5, 
-            completed: true 
-          },
-          { 
-            set_number: 2, 
-            prescribed_weight: 360, 
-            prescribed_reps: 3, 
-            actual_weight: 360, 
-            actual_reps: 3, 
-            completed: true 
-          },
-          { 
-            set_number: 3, 
-            prescribed_weight: 405, 
-            prescribed_reps: 1, 
-            actual_weight: 405, 
-            actual_reps: 1, 
-            completed: false 
-          },
-          { 
-            set_number: 4, 
-            prescribed_weight: 425, 
-            prescribed_reps: 1, 
-            actual_weight: 425, 
-            actual_reps: 1, 
-            completed: false 
-          }
+          { set_number: 1, prescribed_weight: 315, prescribed_reps: 5, actual_weight: 315, actual_reps: 5, completed: true },
+          { set_number: 2, prescribed_weight: 360, prescribed_reps: 3, actual_weight: 360, actual_reps: 3, completed: true },
+          { set_number: 3, prescribed_weight: 405, prescribed_reps: 1, actual_weight: 405, actual_reps: 1, completed: false },
+          { set_number: 4, prescribed_weight: 425, prescribed_reps: 1, actual_weight: 425, actual_reps: 1, completed: false }
         ]
       },
       {
-        name: 'bench_press',
+        name: 'bench_press' as const,
         sets: [
-          { 
-            set_number: 1, 
-            prescribed_weight: 225, 
-            prescribed_reps: 5, 
-            actual_weight: 225, 
-            actual_reps: 5, 
-            completed: false 
-          },
-          { 
-            set_number: 2, 
-            prescribed_weight: 245, 
-            prescribed_reps: 3, 
-            actual_weight: 245, 
-            actual_reps: 3, 
-            completed: false 
-          },
-          { 
-            set_number: 3, 
-            prescribed_weight: 265, 
-            prescribed_reps: 1, 
-            actual_weight: 265, 
-            actual_reps: 1, 
-            completed: false 
-          },
-          { 
-            set_number: 4, 
-            prescribed_weight: 275, 
-            prescribed_reps: 1, 
-            actual_weight: 275, 
-            actual_reps: 1, 
-            completed: false 
-          }
+          { set_number: 1, prescribed_weight: 225, prescribed_reps: 5, actual_weight: 225, actual_reps: 5, completed: false },
+          { set_number: 2, prescribed_weight: 245, prescribed_reps: 3, actual_weight: 245, actual_reps: 3, completed: false },
+          { set_number: 3, prescribed_weight: 265, prescribed_reps: 1, actual_weight: 265, actual_reps: 1, completed: false },
+          { set_number: 4, prescribed_weight: 275, prescribed_reps: 1, actual_weight: 275, actual_reps: 1, completed: false }
         ]
       },
       {
-        name: 'kettlebell_swings',
+        name: 'kettlebell_swings' as const,
         sets: [
-          { 
-            set_number: 1, 
-            prescribed_weight: 35, 
-            prescribed_reps: 20, 
-            actual_weight: 35, 
-            actual_reps: 20, 
-            completed: false 
-          },
-          { 
-            set_number: 2, 
-            prescribed_weight: 35, 
-            prescribed_reps: 20, 
-            actual_weight: 35, 
-            actual_reps: 20, 
-            completed: false 
-          },
-          { 
-            set_number: 3, 
-            prescribed_weight: 35, 
-            prescribed_reps: 20, 
-            actual_weight: 35, 
-            actual_reps: 20, 
-            completed: false 
-          }
-        ],
-        protocol: 'for_time'
+          { set_number: 1, prescribed_weight: 35, prescribed_reps: 20, actual_weight: 35, actual_reps: 20, completed: false },
+          { set_number: 2, prescribed_weight: 35, prescribed_reps: 20, actual_weight: 35, actual_reps: 20, completed: false },
+          { set_number: 3, prescribed_weight: 35, prescribed_reps: 20, actual_weight: 35, actual_reps: 20, completed: false }
+        ]
       }
     ]
   }
 
   useEffect(() => {
-    const initializeUser = async () => {
-      // Temporarily bypass auth for demo - set fake user
-      const mockUser = { id: 'demo-user', email: 'demo@ptcommand.app' } as any
-      setUser(mockUser)
-      setCurrentSession(mockSession)
-      setWorkoutStartTime(Date.now())
-      setLoading(false)
-    }
-
-    initializeUser()
+    setWorkoutStartTime(Date.now())
   }, [])
 
   // Timer effect
@@ -172,36 +76,24 @@ export default function PTCommand() {
     return formatTime(elapsed)
   }
 
-  const getCurrentSet = (): (WorkoutSetData & { index: number }) | null => {
-    if (!currentSession) return null
-    
+  const getCurrentSet = () => {
     const exercise = currentSession.exercises[currentExercise]
     if (!exercise) return null
-    
     const currentSetIndex = exercise.sets.findIndex(set => !set.completed)
     return currentSetIndex !== -1 ? { ...exercise.sets[currentSetIndex], index: currentSetIndex } : null
   }
 
-  const completeSet = async (actualWeight: number, actualReps: number) => {
-    if (!currentSession) return
-    
+  const completeSet = (actualWeight: number, actualReps: number) => {
     const currentSet = getCurrentSet()
     if (!currentSet) return
 
-    // Update local state
-    const newSession = { ...currentSession }
-    const exercise = newSession.exercises[currentExercise]
-    exercise.sets[currentSet.index] = {
-      ...exercise.sets[currentSet.index],
-      completed: true,
-      actual_weight: actualWeight,
-      actual_reps: actualReps,
-      completed_at: new Date().toISOString()
-    }
-    setCurrentSession(newSession)
-
-    // Start rest timer based on exercise
-    const exerciseName = exercise.name
+    // Update the set as completed (in real app, this would update database)
+    currentSession.exercises[currentExercise].sets[currentSet.index].completed = true
+    currentSession.exercises[currentExercise].sets[currentSet.index].actual_weight = actualWeight
+    currentSession.exercises[currentExercise].sets[currentSet.index].actual_reps = actualReps
+    
+    // Start rest timer
+    const exerciseName = currentSession.exercises[currentExercise].name
     if (exerciseName === 'deadlift') {
       setRestTimer(240) // 4 minutes
       setIsTimerRunning(true)
@@ -209,42 +101,16 @@ export default function PTCommand() {
       setRestTimer(180) // 3 minutes  
       setIsTimerRunning(true)
     }
-    // KB swings don't get rest timer
-  }
-
-  const updateSetWeight = (weight: number) => {
-    if (!currentSession) return
     
-    const currentSet = getCurrentSet()
-    if (!currentSet) return
-
-    const newSession = { ...currentSession }
-    newSession.exercises[currentExercise].sets[currentSet.index].actual_weight = weight
-    setCurrentSession(newSession)
+    // Force re-render
+    setCurrentExercise(currentExercise)
   }
 
-  const updateSetReps = (reps: number) => {
-    if (!currentSession) return
-    
-    const currentSet = getCurrentSet()
-    if (!currentSet) return
-
-    const newSession = { ...currentSession }
-    newSession.exercises[currentExercise].sets[currentSet.index].actual_reps = reps
-    setCurrentSession(newSession)
-  }
-
-  const getCompletedSets = (): WorkoutSetData[] => {
-    if (!currentSession) return []
+  const getCompletedSets = () => {
     return currentSession.exercises[currentExercise]?.sets.filter(set => set.completed) || []
   }
 
-  const getNextExercise = (): WorkoutExercise | null => {
-    if (!currentSession || currentExercise >= currentSession.exercises.length - 1) return null
-    return currentSession.exercises[currentExercise + 1]
-  }
-
-  const getExerciseDisplayName = (name: ExerciseName): string => {
+  const getExerciseDisplayName = (name: string): string => {
     const names = {
       'deadlift': 'Deadlifts',
       'bench_press': 'Bench Press',
@@ -252,68 +118,46 @@ export default function PTCommand() {
       'squat': 'Squats',
       'kettlebell_swings': 'Kettlebell Swings'
     }
-    return names[name]
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading PT Command...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-hull-950 flex items-center justify-center">
-        <div className="naval-card p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold text-navy-50 mb-4">PT Command</h1>
-          <p className="text-muted-100 mb-6">Sign in to access your training protocol</p>
-          <button className="btn-primary">
-            Sign In
-          </button>
-        </div>
-      </div>
-    )
+    return names[name as keyof typeof names] || name
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <div className="max-w-4xl mx-auto px-6 py-6">
+    <div style={{ minHeight: '100vh', backgroundColor: '#0f172a', padding: '24px' }}>
+      <div style={{ maxWidth: '1024px', margin: '0 auto' }}>
         
         {/* Header */}
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="pt-card" style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
             <div>
-              <h1 className="text-2xl font-bold text-white mb-1">
+              <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: '0 0 8px 0', color: '#f1f5f9' }}>
                 PT Command
               </h1>
-              <p className="text-slate-400 text-sm">
+              <p style={{ margin: 0, color: '#94a3b8', fontSize: '14px' }}>
                 Heavy/Medium/Light Training Protocol
               </p>
             </div>
-            <div className="bg-yellow-600 text-black px-3 py-2 rounded-lg text-sm font-mono font-semibold">
+            <div style={{ backgroundColor: '#eab308', color: '#000', padding: '8px 12px', borderRadius: '8px', fontSize: '14px', fontWeight: '600' }}>
               Week 3 - Monday
             </div>
           </div>
 
-          {/* Session Preview */}
-          <div className="border-t border-slate-700 pt-4">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-sm font-semibold text-yellow-500">
+          <div style={{ borderTop: '1px solid #374151', paddingTop: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#eab308' }}>
                 Today: Heavy Day
               </h3>
-              <div className="text-xs text-slate-400 font-mono">
+              <div style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>
                 Workout time: {getTotalWorkoutTime()}
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <span className="bg-slate-600 text-yellow-300 px-2 py-1 rounded text-xs font-mono">Dead 425×1</span>
-              <span className="bg-slate-600 text-yellow-300 px-2 py-1 rounded text-xs font-mono">Bench 275×1</span>
-              <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-mono font-semibold">
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ backgroundColor: '#374151', color: '#facc15', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
+                Dead 425×1
+              </span>
+              <span style={{ backgroundColor: '#374151', color: '#facc15', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
+                Bench 275×1
+              </span>
+              <span style={{ backgroundColor: '#eab308', color: '#000', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace', fontWeight: '600' }}>
                 KB 3×20
               </span>
             </div>
@@ -321,8 +165,8 @@ export default function PTCommand() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-2 mb-6">
-          <div className="flex gap-1">
+        <div className="pt-card" style={{ marginBottom: '24px', padding: '8px' }}>
+          <div style={{ display: 'flex', gap: '4px' }}>
             {[
               { id: 'today' as const, label: 'Today' },
               { id: 'program' as const, label: 'Program' },
@@ -332,11 +176,8 @@ export default function PTCommand() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 cursor-pointer ${
-                  activeTab === tab.id 
-                    ? 'bg-yellow-500 text-black font-semibold' 
-                    : 'text-slate-400 hover:bg-slate-800'
-                }`}
+                className={`pt-tab ${activeTab === tab.id ? 'pt-tab-active' : 'pt-tab-inactive'}`}
+                style={{ flex: 1, border: 'none' }}
               >
                 {tab.label}
               </button>
@@ -345,24 +186,24 @@ export default function PTCommand() {
         </div>
 
         {/* Today Tab Content */}
-        {activeTab === 'today' && currentSession && (
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6">
+        {activeTab === 'today' && (
+          <div className="pt-card">
             
             {/* Exercise Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="pl-4 border-l-4 border-yellow-500">
-                <h3 className="text-xl font-semibold text-white mb-1">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+              <div style={{ borderLeft: '4px solid #eab308', paddingLeft: '16px' }}>
+                <h3 style={{ fontSize: '24px', fontWeight: '600', margin: '0 0 4px 0', color: '#f1f5f9' }}>
                   {getExerciseDisplayName(currentSession.exercises[currentExercise]?.name)}
                 </h3>
-                <p className="text-sm text-slate-400">
-                  Heavy Day (90-100%) • Next: {getNextExercise()?.name ? getExerciseDisplayName(getNextExercise()!.name) : 'Session Complete'}
+                <p style={{ margin: 0, fontSize: '14px', color: '#94a3b8' }}>
+                  Heavy Day (90-100%) • Exercise {currentExercise + 1} of {currentSession.exercises.length}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-3xl font-bold text-yellow-500">
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#eab308' }}>
                   {getCompletedSets().length}/{currentSession.exercises[currentExercise]?.sets.length || 0}
-                </span>
-                <span className="text-sm text-slate-400">sets</span>
+                </div>
+                <div style={{ fontSize: '14px', color: '#94a3b8' }}>sets</div>
               </div>
             </div>
 
@@ -370,12 +211,12 @@ export default function PTCommand() {
               const currentSet = getCurrentSet()
               if (!currentSet) {
                 return (
-                  <div className="naval-card border-success bg-success/10 p-8 text-center">
-                    <div className="text-4xl mb-4">✓</div>
-                    <h3 className="text-lg font-semibold mb-2 text-success">
+                  <div style={{ textAlign: 'center', padding: '32px', backgroundColor: '#166534', border: '1px solid #22c55e', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>✓</div>
+                    <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#22c55e' }}>
                       Exercise Complete
                     </h3>
-                    <p className="text-muted-100 mb-5">
+                    <p style={{ color: '#94a3b8', marginBottom: '20px' }}>
                       All sets finished. Ready for next exercise.
                     </p>
                     <button
@@ -386,7 +227,7 @@ export default function PTCommand() {
                           setIsTimerRunning(false)
                         }
                       }}
-                      className="btn-primary"
+                      className="pt-button-primary"
                     >
                       {currentExercise < currentSession.exercises.length - 1 ? 'Next Exercise' : 'Finish Session'}
                     </button>
@@ -395,169 +236,188 @@ export default function PTCommand() {
               }
 
               return (
-                <>
+                <div>
                   {/* Current Set */}
-                  <div className="set-card-active p-6 mb-4">
-                    <div className="flex justify-between items-center mb-4">
+                  <div style={{ border: '2px solid #eab308', borderRadius: '12px', padding: '24px', marginBottom: '16px', backgroundColor: '#1a1a2e' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                       <div>
-                        <div className="text-xs text-muted-100 mb-1">
+                        <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
                           Set {currentSet.index + 1} of {currentSession.exercises[currentExercise].sets.length}
                         </div>
-                        <div className="text-2xl font-semibold text-navy-50 mb-2">
+                        <div style={{ fontSize: '24px', fontWeight: '600', color: '#f1f5f9' }}>
                           Prescribed: {currentSet.prescribed_weight} lbs × {currentSet.prescribed_reps}
                         </div>
                       </div>
                       {restTimer > 0 && (
-                        <div className="text-right">
-                          <div className="text-xs text-muted-100 mb-1">Rest Timer</div>
-                          <div className={`timer-display ${isTimerRunning ? 'timer-pulse' : ''}`}>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>Rest Timer</div>
+                          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#eab308', fontFamily: 'monospace' }}>
                             {formatTime(restTimer)}
                           </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Adjustable Inputs */}
-                    <div className="bg-hull-700 p-4 rounded-xl mb-4">
-                      <div className="text-xs font-semibold text-navy-400 mb-3">
+                    <div style={{ backgroundColor: '#374151', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', marginBottom: '12px' }}>
                         Actual Performance
                       </div>
-                      <div className="flex gap-4 items-center">
-                        <div className="flex-1">
-                          <label className="block text-xs text-navy-400 mb-2">
+                      <div style={{ display: 'flex', gap: '16px', alignItems: 'end' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>
                             Weight (lbs)
                           </label>
                           <input
                             type="number"
                             value={currentSet.actual_weight || ''}
-                            onChange={(e) => updateSetWeight(parseInt(e.target.value) || 0)}
-                            className="naval-input-large w-full"
+                            style={{ 
+                              width: '100%', 
+                              padding: '8px', 
+                              borderRadius: '8px', 
+                              border: '1px solid #374151',
+                              backgroundColor: '#1e293b',
+                              color: '#f1f5f9',
+                              fontSize: '18px',
+                              fontFamily: 'monospace',
+                              textAlign: 'center'
+                            }}
                           />
                         </div>
-                        <div className="text-2xl text-navy-400 mt-6">×</div>
-                        <div className="flex-1">
-                          <label className="block text-xs text-navy-400 mb-2">
+                        <div style={{ fontSize: '24px', color: '#94a3b8', paddingBottom: '8px' }}>×</div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>
                             Reps
                           </label>
                           <input
                             type="number"
                             value={currentSet.actual_reps || ''}
-                            onChange={(e) => updateSetReps(parseInt(e.target.value) || 0)}
-                            className="naval-input-large w-full"
+                            style={{ 
+                              width: '100%', 
+                              padding: '8px', 
+                              borderRadius: '8px', 
+                              border: '1px solid #374151',
+                              backgroundColor: '#1e293b',
+                              color: '#f1f5f9',
+                              fontSize: '18px',
+                              fontFamily: 'monospace',
+                              textAlign: 'center'
+                            }}
                           />
                         </div>
                       </div>
-                      <div className={`text-xs mt-3 text-center ${
-                        (currentSet.actual_weight || 0) === currentSet.prescribed_weight ? 'text-success' : 'text-danger'
-                      }`}>
-                        {(currentSet.actual_weight || 0) === currentSet.prescribed_weight
-                          ? 'Exactly as prescribed ✓'
-                          : `${((currentSet.actual_weight || 0) - currentSet.prescribed_weight) > 0 ? '+' : ''}${(currentSet.actual_weight || 0) - currentSet.prescribed_weight} lbs from prescribed`
-                        }
-                      </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div style={{ display: 'flex', gap: '12px' }}>
                       <button
                         onClick={() => completeSet(currentSet.actual_weight || currentSet.prescribed_weight, currentSet.actual_reps || currentSet.prescribed_reps)}
-                        className="btn-success flex-1"
+                        style={{ 
+                          flex: 1, 
+                          backgroundColor: '#22c55e', 
+                          color: '#fff', 
+                          padding: '12px', 
+                          borderRadius: '8px', 
+                          border: 'none', 
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }}
                       >
                         Complete Set
                       </button>
-                      <button className="btn-secondary px-6">
+                      <button 
+                        style={{ 
+                          padding: '12px 24px', 
+                          backgroundColor: 'transparent', 
+                          color: '#94a3b8', 
+                          border: '1px solid #374151', 
+                          borderRadius: '8px',
+                          cursor: 'pointer'
+                        }}
+                      >
                         Skip
                       </button>
                     </div>
                   </div>
-                </>
-              )
-            })()}
 
-            {/* Completed Sets */}
-            {getCompletedSets().length > 0 && (
-              <div className="mb-6">
-                <h4 className="text-sm font-semibold text-muted-100 mb-3">
-                  Completed Sets
-                </h4>
-                <div className="space-y-2">
-                  {getCompletedSets().map((set, index) => (
-                    <div key={index} className="set-card-completed p-3">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-navy-50 font-mono">
-                            {set.actual_weight} lbs × {set.actual_reps}
-                          </span>
-                          {(set.actual_weight !== set.prescribed_weight) && (
-                            <span className="text-xs text-muted-100 ml-3">
-                              prescribed: {set.prescribed_weight}×{set.prescribed_reps}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-success font-medium">
-                          ✓ {set.actual_reps} reps
-                        </span>
+                  {/* Completed Sets */}
+                  {getCompletedSets().length > 0 && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#94a3b8', marginBottom: '12px' }}>
+                        Completed Sets
+                      </h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {getCompletedSets().map((set, index) => (
+                          <div key={index} style={{ 
+                            border: '1px solid #22c55e', 
+                            borderRadius: '8px', 
+                            padding: '12px', 
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)' 
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ color: '#f1f5f9', fontFamily: 'monospace' }}>
+                                {set.actual_weight} lbs × {set.actual_reps}
+                              </span>
+                              <span style={{ color: '#22c55e', fontWeight: '500' }}>
+                                ✓ {set.actual_reps} reps
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
+                  )}
+
+                  {/* Action Buttons */}
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button 
+                      style={{ 
+                        flex: 1,
+                        padding: '12px', 
+                        backgroundColor: 'transparent', 
+                        color: '#94a3b8', 
+                        border: '1px solid #374151', 
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      End Session
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (currentExercise < currentSession.exercises.length - 1) {
+                          setCurrentExercise(currentExercise + 1)
+                          setRestTimer(0)
+                          setIsTimerRunning(false)
+                        }
+                      }}
+                      disabled={currentExercise >= currentSession.exercises.length - 1}
+                      style={{
+                        flex: 2,
+                        padding: '12px',
+                        backgroundColor: currentExercise >= currentSession.exercises.length - 1 ? '#374151' : '#eab308',
+                        color: currentExercise >= currentSession.exercises.length - 1 ? '#94a3b8' : '#000',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: '600',
+                        cursor: currentExercise >= currentSession.exercises.length - 1 ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {currentExercise >= currentSession.exercises.length - 1 ? 'Session Complete' : 'Next Exercise'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {/* Session Overview */}
-            <div className="naval-card p-4 mb-4">
-              <h4 className="text-sm font-semibold text-muted-100 mb-3">
-                Today's Session
-              </h4>
-              <div className="flex gap-2 flex-wrap">
-                {currentSession.exercises.map((exercise, index) => (
-                  <span
-                    key={index}
-                    className={`px-3 py-1 rounded text-xs font-medium ${
-                      index === currentExercise 
-                        ? 'bg-amber-500 text-hull-950 font-semibold' 
-                        : 'bg-hull-700 text-muted-100'
-                    }`}
-                  >
-                    {index + 1}. {getExerciseDisplayName(exercise.name)}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button className="btn-secondary flex-1">
-                End Session
-              </button>
-              <button
-                onClick={() => {
-                  if (currentExercise < currentSession.exercises.length - 1) {
-                    setCurrentExercise(currentExercise + 1)
-                    setRestTimer(0)
-                    setIsTimerRunning(false)
-                  }
-                }}
-                disabled={currentExercise >= currentSession.exercises.length - 1}
-                className={`flex-[2] px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
-                  currentExercise >= currentSession.exercises.length - 1
-                    ? 'bg-hull-700 text-muted-100 cursor-not-allowed'
-                    : 'btn-primary'
-                }`}
-              >
-                {currentExercise >= currentSession.exercises.length - 1 ? 'Session Complete' : 'Next Exercise'}
-              </button>
-            </div>
+              )
+            })()}
           </div>
         )}
 
         {/* Other tabs placeholder */}
         {activeTab !== 'today' && (
-          <div className="naval-card p-12 text-center">
-            <div className="text-4xl mb-4 opacity-30">⚡</div>
-            <h3 className="text-lg font-semibold mb-2 text-navy-50">
+          <div className="pt-card" style={{ textAlign: 'center', padding: '48px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>⚡</div>
+            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#f1f5f9' }}>
               {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Module
             </h3>
-            <p className="text-muted-100">
+            <p style={{ color: '#94a3b8', margin: 0 }}>
               Under construction - focus on Today tab for workout logging
             </p>
           </div>
