@@ -410,16 +410,579 @@ export default function PTCommand() {
           </div>
         )}
 
-        {/* Other tabs placeholder */}
-        {activeTab !== 'today' && (
-          <div className="pt-card" style={{ textAlign: 'center', padding: '48px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>⚡</div>
-            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: '#f1f5f9' }}>
-              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Module
-            </h3>
-            <p style={{ color: '#94a3b8', margin: 0 }}>
-              Under construction - focus on Today tab for workout logging
-            </p>
+        {/* Progress Tab Content */}
+        {activeTab === 'progress' && (
+          <div>
+            {/* Weekly Progress Overview */}
+            <div className="pt-card" style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px', color: '#f1f5f9' }}>
+                Weekly Progress
+              </h2>
+              <p style={{ color: '#94a3b8', marginBottom: '20px' }}>
+                H/M/L completion rate and consistency tracking
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                {/* Current Week */}
+                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', border: '2px solid #eab308' }}>
+                  <div style={{ fontSize: '16px', fontWeight: '600', color: '#eab308', marginBottom: '12px' }}>
+                    Week 16 (Current)
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ color: '#f1f5f9' }}>Heavy Day</span>
+                    <span style={{ color: '#22c55e', fontWeight: '600' }}>✓ Completed</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ color: '#f1f5f9' }}>Light Day</span>
+                    <span style={{ color: '#94a3b8' }}>○ Scheduled</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ color: '#f1f5f9' }}>Medium Day</span>
+                    <span style={{ color: '#94a3b8' }}>○ Scheduled</span>
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#eab308' }}>
+                    Progress: 1/3 (33%)
+                  </div>
+                </div>
+
+                {/* Previous Weeks */}
+                {[
+                  { week: 15, heavy: true, light: true, medium: true, percentage: 100 },
+                  { week: 14, heavy: true, light: false, medium: true, percentage: 67 },
+                  { week: 13, heavy: true, light: true, medium: true, percentage: 100 }
+                ].map((week, index) => (
+                  <div key={index} style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', border: '1px solid #374151' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#f1f5f9', marginBottom: '12px' }}>
+                      Week {week.week}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ color: '#f1f5f9' }}>Heavy Day</span>
+                      <span style={{ color: week.heavy ? '#22c55e' : '#ef4444', fontWeight: '600' }}>
+                        {week.heavy ? '✓' : '✗'} {week.heavy ? 'Completed' : 'Missed'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ color: '#f1f5f9' }}>Light Day</span>
+                      <span style={{ color: week.light ? '#22c55e' : '#ef4444', fontWeight: '600' }}>
+                        {week.light ? '✓' : '✗'} {week.light ? 'Completed' : 'Missed'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <span style={{ color: '#f1f5f9' }}>Medium Day</span>
+                      <span style={{ color: week.medium ? '#22c55e' : '#ef4444', fontWeight: '600' }}>
+                        {week.medium ? '✓' : '✗'} {week.medium ? 'Completed' : 'Missed'}
+                      </span>
+                    </div>
+                    <div style={{ 
+                      fontSize: '14px', 
+                      fontWeight: '600', 
+                      color: week.percentage === 100 ? '#22c55e' : week.percentage >= 67 ? '#eab308' : '#ef4444'
+                    }}>
+                      Completion: {week.percentage}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Strength Progression */}
+            <div className="pt-card" style={{ marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                Strength Progression (Last 12 Weeks)
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                {/* Deadlift Progression */}
+                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', border: '1px solid #374151' }}>
+                  <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#ef4444', marginBottom: '16px' }}>
+                    Deadlift Progression
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {[
+                      { week: 'Week 16', weight: 450, change: '+15' },
+                      { week: 'Week 13', weight: 435, change: '+10' },
+                      { week: 'Week 10', weight: 425, change: '+15' },
+                      { week: 'Week 7', weight: 410, change: '+5' },
+                      { week: 'Week 4', weight: 405, change: '+10' }
+                    ].map((entry, index) => (
+                      <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#94a3b8', fontSize: '14px' }}>{entry.week}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ color: '#f1f5f9', fontWeight: '600', fontFamily: 'monospace' }}>
+                            {entry.weight} lbs
+                          </span>
+                          <span style={{ color: '#22c55e', fontSize: '12px', fontFamily: 'monospace' }}>
+                            +{entry.change}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: '12px', padding: '8px', backgroundColor: '#374151', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>Total Gain (12 weeks)</div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#22c55e' }}>+45 lbs</div>
+                  </div>
+                </div>
+
+                {/* Bench Press Progression */}
+                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', border: '1px solid #374151' }}>
+                  <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#3b82f6', marginBottom: '16px' }}>
+                    Bench Press Progression
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {[
+                      { week: 'Week 16', weight: 275, change: '+10' },
+                      { week: 'Week 13', weight: 265, change: '+10' },
+                      { week: 'Week 10', weight: 255, change: '+5' },
+                      { week: 'Week 7', weight: 250, change: '+10' },
+                      { week: 'Week 4', weight: 240, change: '+5' }
+                    ].map((entry, index) => (
+                      <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#94a3b8', fontSize: '14px' }}>{entry.week}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ color: '#f1f5f9', fontWeight: '600', fontFamily: 'monospace' }}>
+                            {entry.weight} lbs
+                          </span>
+                          <span style={{ color: '#22c55e', fontSize: '12px', fontFamily: 'monospace' }}>
+                            +{entry.change}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: '12px', padding: '8px', backgroundColor: '#374151', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>Total Gain (12 weeks)</div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#22c55e' }}>+35 lbs</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Training Analytics */}
+            <div className="pt-card">
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                Training Analytics
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                {/* Consistency */}
+                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#22c55e', marginBottom: '8px' }}>
+                    89%
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#94a3b8' }}>
+                    Consistency Rate
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px' }}>
+                    34/38 sessions completed
+                  </div>
+                </div>
+
+                {/* Average Session Time */}
+                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#eab308', marginBottom: '8px' }}>
+                    46m
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#94a3b8' }}>
+                    Avg Session Time
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+                    Range: 32-58 minutes
+                  </div>
+                </div>
+
+                {/* Volume Increase */}
+                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#3b82f6', marginBottom: '8px' }}>
+                    +23%
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#94a3b8' }}>
+                    Volume Increase
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#3b82f6', marginTop: '4px' }}>
+                    vs. 12 weeks ago
+                  </div>
+                </div>
+
+                {/* Current Streak */}
+                <div style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '8px' }}>
+                    7
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#94a3b8' }}>
+                    Week Streak
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#f59e0b', marginTop: '4px' }}>
+                    Personal best!
+                  </div>
+                </div>
+              </div>
+
+              {/* Goals */}
+              <div style={{ marginTop: '24px' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#f1f5f9', marginBottom: '12px' }}>
+                  Current Goals
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {[
+                    { goal: 'Deadlift 500 lbs', current: 450, target: 500, progress: 90 },
+                    { goal: 'Bench Press 300 lbs', current: 275, target: 300, progress: 92 },
+                    { goal: 'Complete 4 weeks straight', current: 7, target: 4, progress: 100, completed: true }
+                  ].map((goal, index) => (
+                    <div key={index} style={{ 
+                      backgroundColor: '#1a1a2e', 
+                      padding: '12px', 
+                      borderRadius: '6px',
+                      border: goal.completed ? '1px solid #22c55e' : '1px solid #374151'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#f1f5f9' }}>
+                          {goal.goal}
+                          {goal.completed && <span style={{ marginLeft: '8px', color: '#22c55e' }}>🎉</span>}
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                          {goal.progress}%
+                        </span>
+                      </div>
+                      <div style={{ 
+                        width: '100%', 
+                        height: '4px', 
+                        backgroundColor: '#374151', 
+                        borderRadius: '2px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{ 
+                          width: `${goal.progress}%`, 
+                          height: '100%', 
+                          backgroundColor: goal.completed ? '#22c55e' : '#eab308',
+                          transition: 'width 0.3s ease'
+                        }} />
+                      </div>
+                      {!goal.completed && (
+                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+                          {typeof goal.current === 'number' && typeof goal.target === 'number' ? 
+                            `${goal.target - goal.current} lbs to go` : 
+                            'In progress'
+                          }
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {activeTab === 'history' && (
+          <div>
+            {/* Recent Sessions */}
+            <div className="pt-card" style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px', color: '#f1f5f9' }}>
+                Recent Sessions
+              </h2>
+              <p style={{ color: '#94a3b8', marginBottom: '20px' }}>
+                Your last 10 workouts with completion status and key lifts
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[
+                  { date: '2026-04-16', type: 'Heavy', completed: true, deadlift: '425×1', bench: '275×1', duration: '52 min', pr: true },
+                  { date: '2026-04-14', type: 'Light', completed: true, squat: '225×4×2', ohp: '135×4×2', duration: '38 min', pr: false },
+                  { date: '2026-04-12', type: 'Medium', completed: true, squat: '265×1', ohp: '155×1', duration: '45 min', pr: false },
+                  { date: '2026-04-09', type: 'Heavy', completed: true, deadlift: '405×1', bench: '265×1', duration: '48 min', pr: false },
+                  { date: '2026-04-07', type: 'Light', completed: false, squat: '215×6', ohp: '125×6', duration: '25 min', pr: false },
+                  { date: '2026-04-05', type: 'Medium', completed: true, squat: '255×1', ohp: '150×1', duration: '42 min', pr: false }
+                ].map((session, index) => (
+                  <div key={index} style={{ 
+                    border: `1px solid ${session.completed ? '#22c55e' : '#ef4444'}`, 
+                    borderRadius: '8px', 
+                    padding: '16px', 
+                    backgroundColor: session.completed ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div>
+                          <div style={{ fontSize: '16px', fontWeight: '600', color: '#f1f5f9' }}>
+                            {session.type} Day
+                            {session.pr && <span style={{ marginLeft: '8px', fontSize: '12px', color: '#eab308', fontWeight: 'bold' }}>🏆 PR!</span>}
+                          </div>
+                          <div style={{ fontSize: '14px', color: '#94a3b8' }}>
+                            {new Date(session.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ 
+                          fontSize: '12px', 
+                          color: session.completed ? '#22c55e' : '#ef4444',
+                          fontWeight: '600'
+                        }}>
+                          {session.completed ? '✓ COMPLETED' : '✗ INCOMPLETE'}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                          {session.duration}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                      {session.deadlift && (
+                        <span style={{ backgroundColor: '#374151', color: '#facc15', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
+                          Dead: {session.deadlift}
+                        </span>
+                      )}
+                      {session.bench && (
+                        <span style={{ backgroundColor: '#374151', color: '#facc15', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
+                          Bench: {session.bench}
+                        </span>
+                      )}
+                      {session.squat && (
+                        <span style={{ backgroundColor: '#374151', color: '#facc15', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
+                          Squat: {session.squat}
+                        </span>
+                      )}
+                      {session.ohp && (
+                        <span style={{ backgroundColor: '#374151', color: '#facc15', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
+                          OHP: {session.ohp}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Personal Records */}
+            <div className="pt-card">
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                Personal Records
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                {[
+                  { 
+                    exercise: 'Deadlift', 
+                    current: 450, 
+                    previous: 435, 
+                    date: '2026-04-16',
+                    trend: 'up'
+                  },
+                  { 
+                    exercise: 'Bench Press', 
+                    current: 275, 
+                    previous: 265, 
+                    date: '2026-04-16',
+                    trend: 'up'
+                  },
+                  { 
+                    exercise: 'Squat', 
+                    current: 315, 
+                    previous: 315, 
+                    date: '2026-03-28',
+                    trend: 'same'
+                  },
+                  { 
+                    exercise: 'Overhead Press', 
+                    current: 185, 
+                    previous: 180, 
+                    date: '2026-04-03',
+                    trend: 'up'
+                  }
+                ].map((pr, index) => (
+                  <div key={index} style={{ 
+                    backgroundColor: '#1a1a2e', 
+                    padding: '16px', 
+                    borderRadius: '8px', 
+                    border: `2px solid ${pr.trend === 'up' ? '#22c55e' : pr.trend === 'same' ? '#eab308' : '#ef4444'}`
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: '#f1f5f9' }}>
+                        {pr.exercise}
+                      </div>
+                      <div style={{ 
+                        fontSize: '20px',
+                        color: pr.trend === 'up' ? '#22c55e' : pr.trend === 'same' ? '#eab308' : '#ef4444'
+                      }}>
+                        {pr.trend === 'up' ? '📈' : pr.trend === 'same' ? '➖' : '📉'}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#f1f5f9', marginBottom: '4px' }}>
+                      {pr.current} lbs
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>
+                      Previous: {pr.previous} lbs
+                      {pr.trend === 'up' && (
+                        <span style={{ color: '#22c55e', marginLeft: '8px' }}>
+                          (+{pr.current - pr.previous})
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                      {new Date(pr.date).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {activeTab === 'program' && (
+          <div>
+            {/* Program Overview */}
+            <div className="pt-card" style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px', color: '#f1f5f9' }}>
+                H/M/L Training Programs
+              </h2>
+              <p style={{ color: '#94a3b8', marginBottom: '20px' }}>
+                Heavy/Medium/Light protocol with progressive overload. Customize your upcoming workouts.
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                {/* Heavy Day Program */}
+                <div style={{ border: '1px solid #374151', borderRadius: '12px', padding: '16px', backgroundColor: '#1a1a2e' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#ef4444', margin: 0 }}>Heavy Day</h3>
+                    <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>Monday</span>
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '16px' }}>
+                    90-100% Training Max • Max effort singles
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
+                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>Deadlifts</div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>70%×5, 80%×3, 90%×1, 94%×1</div>
+                    </div>
+                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
+                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>Bench Press</div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>70%×5, 80%×3, 90%×1, 94%×1</div>
+                    </div>
+                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
+                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>KB Swings</div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>3×20 for time</div>
+                    </div>
+                  </div>
+                  <button className="pt-button-primary" style={{ width: '100%', marginTop: '12px', fontSize: '14px' }}>
+                    Edit Program
+                  </button>
+                </div>
+
+                {/* Light Day Program */}
+                <div style={{ border: '1px solid #374151', borderRadius: '12px', padding: '16px', backgroundColor: '#1a1a2e' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#22c55e', margin: 0 }}>Light Day</h3>
+                    <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>Wednesday</span>
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '16px' }}>
+                    60-70% Training Max • Volume work
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
+                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>Squats</div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>60%×8, 65%×6, 70%×4, 70%×4</div>
+                    </div>
+                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
+                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>Overhead Press</div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>60%×8, 65%×6, 70%×4, 70%×4</div>
+                    </div>
+                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
+                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>KB Swings</div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>10×20, 1min rest</div>
+                    </div>
+                  </div>
+                  <button className="pt-button-primary" style={{ width: '100%', marginTop: '12px', fontSize: '14px' }}>
+                    Edit Program
+                  </button>
+                </div>
+
+                {/* Medium Day Program */}
+                <div style={{ border: '1px solid #374151', borderRadius: '12px', padding: '16px', backgroundColor: '#1a1a2e' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#eab308', margin: 0 }}>Medium Day</h3>
+                    <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>Friday</span>
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '16px' }}>
+                    70-85% Training Max • Moderate intensity
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
+                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>Squats</div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>70%×5, 75%×3, 80%×1, 85%×1</div>
+                    </div>
+                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
+                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>Overhead Press</div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>70%×5, 75%×3, 80%×1, 85%×1</div>
+                    </div>
+                    <div style={{ backgroundColor: '#374151', padding: '8px 12px', borderRadius: '6px' }}>
+                      <div style={{ fontWeight: '600', color: '#f1f5f9' }}>KB Swings</div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>10×10, 1min rest</div>
+                    </div>
+                  </div>
+                  <button className="pt-button-primary" style={{ width: '100%', marginTop: '12px', fontSize: '14px' }}>
+                    Edit Program
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 1RM Settings */}
+            <div className="pt-card">
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#f1f5f9' }}>
+                Training Maxes (90% of 1RM)
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                {[
+                  { exercise: 'Deadlift', oneRM: 450, trainingMax: 405 },
+                  { exercise: 'Bench Press', oneRM: 275, trainingMax: 250 },
+                  { exercise: 'Squat', oneRM: 315, trainingMax: 285 },
+                  { exercise: 'Overhead Press', oneRM: 185, trainingMax: 170 }
+                ].map((lift, index) => (
+                  <div key={index} style={{ backgroundColor: '#1a1a2e', padding: '16px', borderRadius: '8px', border: '1px solid #374151' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#f1f5f9', marginBottom: '8px' }}>
+                      {lift.exercise}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                          1RM
+                        </label>
+                        <input
+                          type="number"
+                          value={lift.oneRM}
+                          style={{ 
+                            width: '100%', 
+                            padding: '6px 8px', 
+                            backgroundColor: '#374151',
+                            border: '1px solid #4b5563',
+                            borderRadius: '4px',
+                            color: '#f1f5f9',
+                            fontSize: '14px'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                          Training Max
+                        </label>
+                        <input
+                          type="number"
+                          value={lift.trainingMax}
+                          style={{ 
+                            width: '100%', 
+                            padding: '6px 8px', 
+                            backgroundColor: '#374151',
+                            border: '1px solid #4b5563',
+                            borderRadius: '4px',
+                            color: '#f1f5f9',
+                            fontSize: '14px'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button className="pt-button-primary" style={{ marginTop: '16px' }}>
+                Update Training Maxes
+              </button>
+            </div>
           </div>
         )}
 
