@@ -134,12 +134,11 @@ export default function PTCommand() {
 
   useEffect(() => {
     const initializeUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        setUser(session.user)
-        setCurrentSession(mockSession)
-        setWorkoutStartTime(Date.now())
-      }
+      // Temporarily bypass auth for demo - set fake user
+      const mockUser = { id: 'demo-user', email: 'demo@ptcommand.app' } as any
+      setUser(mockUser)
+      setCurrentSession(mockSession)
+      setWorkoutStartTime(Date.now())
       setLoading(false)
     }
 
