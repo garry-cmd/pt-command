@@ -924,7 +924,7 @@ export default function PTCommand() {
                   border: `1px solid ${session.color}`, 
                   borderRadius: '12px', 
                   padding: '20px', 
-                  backgroundColor: session.completed ? 'rgba(34, 197, 94, 0.1)' : '#1f2937',
+                  backgroundColor: session.exercises.every((ex: any) => ex.completed) ? 'rgba(34, 197, 94, 0.1)' : '#1f2937',
                   marginBottom: '16px'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
