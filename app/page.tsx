@@ -38,10 +38,26 @@ interface OneRMs {
   overhead_press: number;
 }
 
+interface WeekData {
+  sets: string;
+  weight: number;
+}
+
+interface ExerciseData {
+  week_1: WeekData;
+  week_2: WeekData;
+  week_3: WeekData;
+  week_4: WeekData;
+}
+
 interface Program {
   id: string;
   name: string;
-  exercises: any;
+  exercises: {
+    [workoutType: string]: {
+      [exerciseName: string]: ExerciseData;
+    };
+  };
   workout_type: string;
 }
 
@@ -54,7 +70,7 @@ const EXERCISE_OPTIONS = [
   'kettlebell_swings'
 ];
 
-const EXERCISE_DISPLAY_NAMES = {
+const EXERCISE_DISPLAY_NAMES: { [key: string]: string } = {
   squat: 'Squat',
   bench_press: 'Bench Press',
   overhead_press: 'Overhead Press', 
@@ -216,7 +232,8 @@ export default function PTCommand() {
       const sets = [];
 
       for (const [exerciseName, exerciseData] of Object.entries(programExercises)) {
-        const weekData = exerciseData[`week_${currentWeek}`];
+        const typedExerciseData = exerciseData as ExerciseData;
+        const weekData = typedExerciseData[`week_${currentWeek}` as keyof ExerciseData];
         if (weekData) {
           const { sets: numSets, reps } = parseSetReps(weekData.sets);
           
@@ -278,7 +295,7 @@ export default function PTCommand() {
 
       return {
         id: exerciseName,
-        name: EXERCISE_DISPLAY_NAMES[exerciseName as keyof typeof EXERCISE_DISPLAY_NAMES] || exerciseName,
+        name: EXERCISE_DISPLAY_NAMES[exerciseName] || exerciseName,
         sets: exerciseSets.sort((a, b) => a.setNumber - b.setNumber),
         completed: exerciseSets.every(set => set.completed)
       };
@@ -331,7 +348,7 @@ export default function PTCommand() {
       const currentExercises = { ...currentProgram.exercises };
       
       // Add new exercise to all workout types
-      ['heavy', 'medium', 'light'].forEach((workoutType, typeIndex) => {
+      ['heavy', 'medium', 'light'].forEach((workoutType) => {
         if (!currentExercises[workoutType]) {
           currentExercises[workoutType] = {};
         }
@@ -1005,7 +1022,7 @@ export default function PTCommand() {
             {currentProgram && Object.keys(currentProgram.exercises.medium || {}).length > 0 ? (
               <div style={{ color: '#ccc', fontSize: '14px' }}>
                 Current exercises: {Object.keys(currentProgram.exercises.medium || {})
-                  .map(ex => EXERCISE_DISPLAY_NAMES[ex as keyof typeof EXERCISE_DISPLAY_NAMES] || ex)
+                  .map(ex => EXERCISE_DISPLAY_NAMES[ex] || ex)
                   .join(', ')}
               </div>
             ) : (
@@ -1075,7 +1092,7 @@ export default function PTCommand() {
                     <option value="">Choose an exercise...</option>
                     {EXERCISE_OPTIONS.map(ex => (
                       <option key={ex} value={ex}>
-                        {EXERCISE_DISPLAY_NAMES[ex as keyof typeof EXERCISE_DISPLAY_NAMES] || ex}
+                        {EXERCISE_DISPLAY_NAMES[ex] || ex}
                       </option>
                     ))}
                   </select>
