@@ -1228,7 +1228,7 @@ export default function PTCommand() {
                     ✅ Workout Completed!
                   </div>
                   <div style={{ fontSize: '14px', opacity: 0.8 }}>
-                    Duration: {formatDuration(currentWorkout?.duration_seconds)} • Saved to History
+                    Duration: {formatDuration(currentWorkout?.duration_seconds ?? null)} • Saved to History
                   </div>
                 </div>
               )}
