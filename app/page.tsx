@@ -599,11 +599,12 @@ export default function PTCommand() {
       minHeight: '100vh',
       color: '#fff',
       padding: '40px',
-      textAlign: 'center',
-      color: '#666'
+      textAlign: 'center'
     }}>
-      <h2>{currentTab.charAt(0).toUpperCase() + currentTab.slice(1)} View</h2>
-      <p>Coming soon...</p>
+      <div style={{ color: '#666' }}>
+        <h2>{currentTab.charAt(0).toUpperCase() + currentTab.slice(1)} View</h2>
+        <p>Coming soon...</p>
+      </div>
     </div>
   );
 }
