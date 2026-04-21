@@ -412,9 +412,15 @@ export default function PTCommand() {
   useEffect(() => {
     if (currentProgram) {
       loadProgramSlots();
+    }
+  }, [currentProgram]);
+
+  // FIXED: Load current workout when programSlots or currentWeek changes
+  useEffect(() => {
+    if (currentProgram && programSlots.length > 0) {
       loadCurrentWorkout();
     }
-  }, [currentProgram, currentWeek]);
+  }, [currentProgram, currentWeek, programSlots]);
 
   const loadPrograms = async () => {
     try {
@@ -477,6 +483,7 @@ export default function PTCommand() {
   const loadCurrentWorkout = async () => {
     if (!currentProgram) return;
 
+    // FIXED: Get current day correctly
     const today = new Date().getDay();
     const dayMap: { [key: number]: string } = {
       0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 
@@ -484,12 +491,17 @@ export default function PTCommand() {
     };
     const currentDay = dayMap[today];
 
-    // Get slots for today
+    console.log(`[Today Tab] Loading workout for: ${currentDay}, Week ${currentWeek}`);
+
+    // FIXED: Get slots for today from the current programSlots state
     const todaySlots = programSlots.filter(
       slot => slot.week_number === currentWeek && slot.day_of_week === currentDay
     );
 
+    console.log(`[Today Tab] Found ${todaySlots.length} slots for today:`, todaySlots);
+
     if (todaySlots.length === 0) {
+      console.log(`[Today Tab] No exercises scheduled for ${currentDay} Week ${currentWeek}`);
       setExercises([]);
       return;
     }
@@ -506,9 +518,10 @@ export default function PTCommand() {
         .single();
 
       if (existingWorkout) {
+        console.log('[Today Tab] Found existing workout, converting...');
         convertWorkoutToExercises(existingWorkout);
       } else {
-        // Create new workout from program slots
+        console.log('[Today Tab] Creating new workout from slots...');
         await createWorkoutFromSlots(currentDay, todaySlots);
       }
     } catch (error) {
@@ -520,6 +533,8 @@ export default function PTCommand() {
     if (!currentProgram) return;
 
     try {
+      console.log(`[Today Tab] Creating workout from ${slots.length} slots`);
+
       // Create workout
       const { data: workout, error: workoutError } = await supabase
         .from('workouts')
@@ -559,6 +574,8 @@ export default function PTCommand() {
         if (setsError) throw setsError;
       }
 
+      console.log(`[Today Tab] Created workout with ${workoutSets.length} sets`);
+
       // Reload workout with sets
       loadCurrentWorkout();
     } catch (error) {
@@ -568,6 +585,8 @@ export default function PTCommand() {
 
   const convertWorkoutToExercises = (workout: any) => {
     if (!workout.workout_sets) return;
+
+    console.log(`[Today Tab] Converting workout with ${workout.workout_sets.length} sets`);
 
     // Group sets by exercise
     const exerciseGroups = workout.workout_sets.reduce((groups: any, set: any) => {
@@ -602,6 +621,7 @@ export default function PTCommand() {
       };
     });
 
+    console.log(`[Today Tab] Converted to ${exerciseList.length} exercises`);
     setExercises(exerciseList);
   };
 
@@ -903,6 +923,20 @@ export default function PTCommand() {
                 Week {week}
               </button>
             ))}
+          </div>
+
+          {/* FIXED: Debug info for troubleshooting */}
+          <div style={{
+            background: '#1a1a1a',
+            borderRadius: '8px',
+            padding: '12px',
+            marginBottom: '16px',
+            fontSize: '12px',
+            color: '#888'
+          }}>
+            <div>Current day: {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]}</div>
+            <div>Program slots loaded: {programSlots.length}</div>
+            <div>Today exercises found: {exercises.length}</div>
           </div>
 
           {/* Exercises */}
