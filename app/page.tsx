@@ -23,6 +23,7 @@ export default function PTCommand() {
   const [workoutTime, setWorkoutTime] = useState(23); // minutes
   const [restTimer, setRestTimer] = useState(151); // seconds
   const [showRestTimer, setShowRestTimer] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   
   // Current exercise and set tracking
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(1); // Start with Overhead Press (index 1)
@@ -78,6 +79,17 @@ export default function PTCommand() {
       return () => clearInterval(timer);
     }
   }, [showRestTimer, restTimer]);
+
+  // Handle responsive layout
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -209,7 +221,7 @@ export default function PTCommand() {
         {/* Dual Cards Layout */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: window.innerWidth > 768 ? '1fr 1fr' : '1fr',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
           gap: '24px',
           marginBottom: '40px'
         }}>
