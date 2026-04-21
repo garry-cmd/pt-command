@@ -1,15 +1,26 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client with CORRECT API key
+// Initialize Supabase client
 const supabaseUrl = 'https://vvuysqzgscdsmqgmlqwp.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2dXlzcXpnc2Nkc21xZ21scXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NzE5NTIsImV4cCI6MjA5MjA0Nzk1Mn0.8jP4S91KZfJS9lqrUWHJPYuG09j5MX3chDsfFlnTpFU';
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Types
+interface ProgramSlot {
+  id: string;
+  program_id: string;
+  week_number: number;
+  day_of_week: string;
+  exercise: string;
+  sets: string;
+  weight: number;
+  sort_order: number;
+}
+
 interface Set {
   id: string;
   setNumber: number;
@@ -38,44 +49,18 @@ interface OneRMs {
   overhead_press: number;
 }
 
-interface WeekData {
-  sets: string;
-  weight: number;
-  active?: boolean; // NEW: Whether this exercise is active for this week
-}
-
-interface ExerciseData {
-  week_1: WeekData;
-  week_2: WeekData;
-  week_3: WeekData;
-  week_4: WeekData;
-}
-
 interface Program {
   id: string;
   name: string;
-  exercises: {
-    [workoutType: string]: {
-      [exerciseName: string]: ExerciseData;
-    };
-  };
-  workout_type: string;
 }
 
-// Exercise options for adding
-const STRENGTH_EXERCISE_OPTIONS = [
+// Exercise options
+const EXERCISE_OPTIONS = [
   'squat',
   'bench_press', 
   'overhead_press',
-  'deadlift'
-];
-
-const KETTLEBELL_EXERCISE_OPTIONS = [
-  'kettlebell_swings',
-  'kettlebell_clean',
-  'kettlebell_press', 
-  'kettlebell_snatch',
-  'turkish_getup'
+  'deadlift',
+  'kettlebell_swings'
 ];
 
 const EXERCISE_DISPLAY_NAMES: { [key: string]: string } = {
@@ -83,12 +68,11 @@ const EXERCISE_DISPLAY_NAMES: { [key: string]: string } = {
   bench_press: 'Bench Press',
   overhead_press: 'Overhead Press', 
   deadlift: 'Deadlift',
-  kettlebell_swings: 'KB Swings',
-  kettlebell_clean: 'KB Clean',
-  kettlebell_press: 'KB Press',
-  kettlebell_snatch: 'KB Snatch',
-  turkish_getup: 'Turkish Get-up'
+  kettlebell_swings: 'KB Swings'
 };
+
+const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const DAY_DISPLAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 // Helper functions
 const parseSetReps = (setRepsString: string) => {
@@ -112,8 +96,251 @@ const calculateVolume = (setsReps: string, weight: number) => {
   return sets * reps * weight;
 };
 
-const isKettlebellExercise = (exerciseName: string) => {
-  return exerciseName.toLowerCase().includes('kettlebell') || exerciseName.toLowerCase().includes('turkish');
+// Drag and drop functionality
+const ExerciseCard: React.FC<{
+  slot: ProgramSlot;
+  oneRMs: OneRMs;
+  onUpdate: (id: string, field: string, value: any) => void;
+  onDelete: (id: string) => void;
+}> = ({ slot, oneRMs, onUpdate, onDelete }) => {
+  const [isDragging, setIsDragging] = useState(false);
+
+  const exerciseKey = slot.exercise.toLowerCase() as keyof OneRMs;
+  const oneRM = oneRMs[exerciseKey] || oneRMs.squat;
+  const percentage = calculatePercentage(slot.weight, oneRM);
+  const volume = calculateVolume(slot.sets, slot.weight);
+
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true);
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      id: slot.id,
+      exercise: slot.exercise,
+      sets: slot.sets,
+      weight: slot.weight
+    }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      style={{
+        background: '#111',
+        border: '2px solid #333',
+        borderRadius: '12px',
+        padding: '12px',
+        marginBottom: '8px',
+        cursor: 'grab',
+        opacity: isDragging ? 0.5 : 1,
+        transition: 'all 0.2s ease'
+      }}
+      onMouseDown={(e) => e.currentTarget.style.cursor = 'grabbing'}
+      onMouseUp={(e) => e.currentTarget.style.cursor = 'grab'}
+    >
+      {/* Exercise Header */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '8px'
+      }}>
+        <div style={{
+          fontSize: '14px',
+          fontWeight: 600,
+          color: '#fbbf24'
+        }}>
+          {EXERCISE_DISPLAY_NAMES[slot.exercise] || slot.exercise}
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(slot.id);
+          }}
+          style={{
+            background: '#ef4444',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '2px 6px',
+            fontSize: '10px',
+            cursor: 'pointer'
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Exercise Details */}
+      <div style={{ fontSize: '12px', fontFamily: '"JetBrains Mono", monospace' }}>
+        {/* Sets x Reps */}
+        <div style={{ marginBottom: '4px' }}>
+          <span style={{ color: '#888', marginRight: '8px' }}>Sets:</span>
+          <input
+            type="text"
+            value={slot.sets}
+            onChange={(e) => onUpdate(slot.id, 'sets', e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#222',
+              border: '1px solid #333',
+              borderRadius: '4px',
+              padding: '2px 6px',
+              color: '#4ade80',
+              fontSize: '12px',
+              width: '60px'
+            }}
+          />
+        </div>
+
+        {/* Weight */}
+        <div style={{ marginBottom: '4px' }}>
+          <span style={{ color: '#888', marginRight: '8px' }}>Weight:</span>
+          <input
+            type="number"
+            value={slot.weight}
+            onChange={(e) => onUpdate(slot.id, 'weight', Number(e.target.value))}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#222',
+              border: '1px solid #333',
+              borderRadius: '4px',
+              padding: '2px 6px',
+              color: '#fff',
+              fontSize: '12px',
+              width: '60px'
+            }}
+          />
+        </div>
+
+        {/* Exercise selector */}
+        <div style={{ marginBottom: '4px' }}>
+          <span style={{ color: '#888', marginRight: '8px' }}>Exercise:</span>
+          <select
+            value={slot.exercise}
+            onChange={(e) => onUpdate(slot.id, 'exercise', e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#222',
+              border: '1px solid #333',
+              borderRadius: '4px',
+              padding: '2px 6px',
+              color: '#fff',
+              fontSize: '11px',
+              width: '80px'
+            }}
+          >
+            {EXERCISE_OPTIONS.map(ex => (
+              <option key={ex} value={ex}>
+                {EXERCISE_DISPLAY_NAMES[ex] || ex}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Calculated metrics */}
+        <div style={{ 
+          borderTop: '1px solid #333', 
+          paddingTop: '6px', 
+          marginTop: '6px',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '4px'
+        }}>
+          <div style={{ color: '#fbbf24', fontSize: '10px' }}>
+            {percentage}% 1RM
+          </div>
+          <div style={{ color: '#8b5cf6', fontSize: '10px' }}>
+            {volume} vol
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Drop zone component
+const DropZone: React.FC<{
+  week: number;
+  day: string;
+  slots: ProgramSlot[];
+  oneRMs: OneRMs;
+  onDrop: (week: number, day: string, cardData: any) => void;
+  onUpdateSlot: (id: string, field: string, value: any) => void;
+  onDeleteSlot: (id: string) => void;
+  onAddCard: (week: number, day: string) => void;
+}> = ({ week, day, slots, oneRMs, onDrop, onUpdateSlot, onDeleteSlot, onAddCard }) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    try {
+      const cardData = JSON.parse(e.dataTransfer.getData('text/plain'));
+      onDrop(week, day, cardData);
+    } catch (error) {
+      console.error('Error parsing dropped card data:', error);
+    }
+  };
+
+  return (
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      style={{
+        background: isDragOver ? '#1a1a1a' : '#0a0a0a',
+        border: `2px dashed ${isDragOver ? '#4ade80' : '#333'}`,
+        borderRadius: '8px',
+        minHeight: '120px',
+        padding: '8px',
+        transition: 'all 0.2s ease'
+      }}
+    >
+      {slots.map(slot => (
+        <ExerciseCard
+          key={slot.id}
+          slot={slot}
+          oneRMs={oneRMs}
+          onUpdate={onUpdateSlot}
+          onDelete={onDeleteSlot}
+        />
+      ))}
+      
+      {/* Add Card Button */}
+      <button
+        onClick={() => onAddCard(week, day)}
+        style={{
+          background: '#333',
+          color: '#888',
+          border: '1px dashed #555',
+          borderRadius: '8px',
+          padding: '8px',
+          width: '100%',
+          fontSize: '12px',
+          cursor: 'pointer',
+          marginTop: slots.length > 0 ? '8px' : '0'
+        }}
+      >
+        + Add Exercise
+      </button>
+    </div>
+  );
 };
 
 export default function PTCommand() {
@@ -121,9 +348,7 @@ export default function PTCommand() {
   const [currentWeek, setCurrentWeek] = useState(1);
   const [currentProgram, setCurrentProgram] = useState<Program | null>(null);
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [currentWorkout, setCurrentWorkout] = useState<any>(null);
-  const [currentSection, setCurrentSection] = useState<'strength' | 'kettlebells'>('strength');
-  const [viewWeek, setViewWeek] = useState(1); // NEW: Which week we're viewing in program tab
+  const [programSlots, setProgramSlots] = useState<ProgramSlot[]>([]);
   
   // Today Tab State
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -143,35 +368,25 @@ export default function PTCommand() {
     overhead_press: 210
   });
 
-  // Add Exercise State
-  const [showAddExercise, setShowAddExercise] = useState(false);
-  const [selectedExercise, setSelectedExercise] = useState('');
-  const [newExerciseWeights, setNewExerciseWeights] = useState([0, 0, 0, 0]);
-  const [newExerciseSets, setNewExerciseSets] = useState(['3×5', '3×5', '3×5', '3×5']);
-  const [newExerciseActiveWeeks, setNewExerciseActiveWeeks] = useState([true, true, true, true]);
-
-  // Delete confirmation state
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [exerciseToDelete, setExerciseToDelete] = useState('');
-
   // Load data on mount
   useEffect(() => {
     loadPrograms();
     loadOneRMs();
   }, []);
 
-  // Load current workout when week changes
+  // Load program slots when program changes
   useEffect(() => {
     if (currentProgram) {
+      loadProgramSlots();
       loadCurrentWorkout();
     }
-  }, [currentWeek, currentProgram]);
+  }, [currentProgram, currentWeek]);
 
   const loadPrograms = async () => {
     try {
       const { data, error } = await supabase
         .from('programs')
-        .select('*')
+        .select('id, name')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -182,6 +397,26 @@ export default function PTCommand() {
       }
     } catch (error) {
       console.error('Error loading programs:', error);
+    }
+  };
+
+  const loadProgramSlots = async () => {
+    if (!currentProgram) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('program_slots')
+        .select('*')
+        .eq('program_id', currentProgram.id)
+        .order('week_number', { ascending: true })
+        .order('day_of_week', { ascending: true })
+        .order('sort_order', { ascending: true });
+      
+      if (error) throw error;
+      
+      setProgramSlots(data || []);
+    } catch (error) {
+      console.error('Error loading program slots:', error);
     }
   };
 
@@ -209,11 +444,21 @@ export default function PTCommand() {
     if (!currentProgram) return;
 
     const today = new Date().getDay();
-    let workoutType = 'medium'; // Default
-    
-    if (today === 1) workoutType = 'medium'; // Monday
-    else if (today === 3) workoutType = 'light'; // Wednesday  
-    else if (today === 5) workoutType = 'heavy'; // Friday
+    const dayMap: { [key: number]: string } = {
+      0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 
+      4: 'thursday', 5: 'friday', 6: 'saturday'
+    };
+    const currentDay = dayMap[today];
+
+    // Get slots for today
+    const todaySlots = programSlots.filter(
+      slot => slot.week_number === currentWeek && slot.day_of_week === currentDay
+    );
+
+    if (todaySlots.length === 0) {
+      setExercises([]);
+      return;
+    }
 
     try {
       // Check if workout already exists for today
@@ -222,23 +467,22 @@ export default function PTCommand() {
         .select('*, workout_sets(*)')
         .eq('program_id', currentProgram.id)
         .eq('week_number', currentWeek)
-        .eq('workout_type', workoutType)
+        .eq('workout_type', currentDay)
         .eq('date', new Date().toISOString().split('T')[0])
         .single();
 
       if (existingWorkout) {
-        setCurrentWorkout(existingWorkout);
         convertWorkoutToExercises(existingWorkout);
       } else {
-        // Create new workout from program template
-        await createWorkoutFromProgram(workoutType);
+        // Create new workout from program slots
+        await createWorkoutFromSlots(currentDay, todaySlots);
       }
     } catch (error) {
       console.error('Error loading current workout:', error);
     }
   };
 
-  const createWorkoutFromProgram = async (workoutType: string) => {
+  const createWorkoutFromSlots = async (workoutType: string, slots: ProgramSlot[]) => {
     if (!currentProgram) return;
 
     try {
@@ -256,35 +500,27 @@ export default function PTCommand() {
 
       if (workoutError) throw workoutError;
 
-      // Get exercises for this workout type from program
-      const programExercises = currentProgram.exercises[workoutType] || {};
-      const sets = [];
-
-      for (const [exerciseName, exerciseData] of Object.entries(programExercises)) {
-        const typedExerciseData = exerciseData as ExerciseData;
-        const weekData = typedExerciseData[`week_${currentWeek}` as keyof ExerciseData];
+      // Create sets from program slots
+      const workoutSets = [];
+      for (const slot of slots) {
+        const { sets, reps } = parseSetReps(slot.sets);
         
-        // Only include if exercise is active for this week
-        if (weekData && weekData.active !== false) {
-          const { sets: numSets, reps } = parseSetReps(weekData.sets);
-          
-          for (let i = 1; i <= numSets; i++) {
-            sets.push({
-              workout_id: workout.id,
-              exercise: exerciseName,
-              set_number: i,
-              prescribed_weight: weekData.weight,
-              prescribed_reps: reps,
-              completed: false
-            });
-          }
+        for (let i = 1; i <= sets; i++) {
+          workoutSets.push({
+            workout_id: workout.id,
+            exercise: slot.exercise,
+            set_number: i,
+            prescribed_weight: slot.weight,
+            prescribed_reps: reps,
+            completed: false
+          });
         }
       }
 
-      if (sets.length > 0) {
+      if (workoutSets.length > 0) {
         const { error: setsError } = await supabase
           .from('workout_sets')
-          .insert(sets);
+          .insert(workoutSets);
 
         if (setsError) throw setsError;
       }
@@ -292,7 +528,7 @@ export default function PTCommand() {
       // Reload workout with sets
       loadCurrentWorkout();
     } catch (error) {
-      console.error('Error creating workout from program:', error);
+      console.error('Error creating workout from slots:', error);
     }
   };
 
@@ -342,7 +578,7 @@ export default function PTCommand() {
         .upsert({
           exercise: exercise,
           one_rm: value,
-          training_max: Math.round(value * 0.9) // 90% for training max
+          training_max: Math.round(value * 0.9)
         });
 
       if (error) throw error;
@@ -353,63 +589,106 @@ export default function PTCommand() {
     }
   };
 
-  const updateProgramData = async (day: string, exercise: string, week: number, field: 'sets' | 'weight' | 'active', value: string | number | boolean) => {
-    if (!currentProgram) return;
-
-    const currentExercises = { ...currentProgram.exercises };
-    
-    if (currentExercises[day] && currentExercises[day][exercise]) {
-      const weekKey = `week_${week}` as keyof ExerciseData;
-      currentExercises[day][exercise][weekKey] = {
-        ...currentExercises[day][exercise][weekKey],
-        [field]: value
-      };
-
-      try {
-        const { error } = await supabase
-          .from('programs')
-          .update({ exercises: currentExercises })
-          .eq('id', currentProgram.id);
-
-        if (error) throw error;
-
-        setCurrentProgram({ ...currentProgram, exercises: currentExercises });
-      } catch (error) {
-        console.error('Error updating program data:', error);
-      }
-    }
-  };
-
-  const deleteExercise = async (exerciseName: string) => {
-    if (!currentProgram) return;
-
+  const updateProgramSlot = async (id: string, field: string, value: any) => {
     try {
-      const currentExercises = { ...currentProgram.exercises };
-      
-      // Remove exercise from all workout types
-      ['heavy', 'medium', 'light'].forEach((workoutType) => {
-        if (currentExercises[workoutType] && currentExercises[workoutType][exerciseName]) {
-          delete currentExercises[workoutType][exerciseName];
-        }
-      });
-
-      // Update program in database
       const { error } = await supabase
-        .from('programs')
-        .update({ exercises: currentExercises })
-        .eq('id', currentProgram.id);
+        .from('program_slots')
+        .update({ [field]: value })
+        .eq('id', id);
 
       if (error) throw error;
 
       // Update local state
-      setCurrentProgram({ ...currentProgram, exercises: currentExercises });
-      
-      // Close confirmation modal
-      setShowDeleteConfirm(false);
-      setExerciseToDelete('');
-      
+      setProgramSlots(prev => prev.map(slot => 
+        slot.id === id ? { ...slot, [field]: value } : slot
+      ));
     } catch (error) {
-      console.error('Error deleting exercise:', error);
+      console.error('Error updating program slot:', error);
+    }
+  };
+
+  const deleteProgramSlot = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('program_slots')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update local state
+      setProgramSlots(prev => prev.filter(slot => slot.id !== id));
+    } catch (error) {
+      console.error('Error deleting program slot:', error);
+    }
+  };
+
+  const addProgramSlot = async (week: number, day: string) => {
+    if (!currentProgram) return;
+
+    const existingSlotsInCell = programSlots.filter(
+      slot => slot.week_number === week && slot.day_of_week === day
+    );
+    const nextSortOrder = existingSlotsInCell.length;
+
+    try {
+      const { data, error } = await supabase
+        .from('program_slots')
+        .insert({
+          program_id: currentProgram.id,
+          week_number: week,
+          day_of_week: day,
+          exercise: 'squat',
+          sets: '3×5',
+          weight: 0,
+          sort_order: nextSortOrder
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      setProgramSlots(prev => [...prev, data]);
+    } catch (error) {
+      console.error('Error adding program slot:', error);
+    }
+  };
+
+  const handleCardDrop = async (week: number, day: string, cardData: any) => {
+    if (!currentProgram) return;
+
+    try {
+      // Delete the original card
+      await deleteProgramSlot(cardData.id);
+
+      // Find the next sort order in the target cell
+      const existingSlotsInCell = programSlots.filter(
+        slot => slot.week_number === week && slot.day_of_week === day
+      );
+      const nextSortOrder = existingSlotsInCell.length;
+
+      // Create new card in target location
+      const { data, error } = await supabase
+        .from('program_slots')
+        .insert({
+          program_id: currentProgram.id,
+          week_number: week,
+          day_of_week: day,
+          exercise: cardData.exercise,
+          sets: cardData.sets,
+          weight: cardData.weight,
+          sort_order: nextSortOrder
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Reload all slots to get updated state
+      loadProgramSlots();
+    } catch (error) {
+      console.error('Error moving card:', error);
     }
   };
 
@@ -428,50 +707,6 @@ export default function PTCommand() {
       if (error) throw error;
     } catch (error) {
       console.error('Error updating set:', error);
-    }
-  };
-
-  const addExerciseToProgram = async () => {
-    if (!selectedExercise || !currentProgram) return;
-
-    try {
-      // Get current program exercises
-      const currentExercises = { ...currentProgram.exercises };
-      
-      // Add new exercise to all workout types
-      ['heavy', 'medium', 'light'].forEach((workoutType) => {
-        if (!currentExercises[workoutType]) {
-          currentExercises[workoutType] = {};
-        }
-        
-        currentExercises[workoutType][selectedExercise] = {
-          week_1: { sets: newExerciseSets[0], weight: newExerciseWeights[0], active: newExerciseActiveWeeks[0] },
-          week_2: { sets: newExerciseSets[1], weight: newExerciseWeights[1], active: newExerciseActiveWeeks[1] },
-          week_3: { sets: newExerciseSets[2], weight: newExerciseWeights[2], active: newExerciseActiveWeeks[2] },
-          week_4: { sets: newExerciseSets[3], weight: newExerciseWeights[3], active: newExerciseActiveWeeks[3] }
-        };
-      });
-
-      // Update program in database
-      const { error } = await supabase
-        .from('programs')
-        .update({ exercises: currentExercises })
-        .eq('id', currentProgram.id);
-
-      if (error) throw error;
-
-      // Update local state
-      setCurrentProgram({ ...currentProgram, exercises: currentExercises });
-      
-      // Reset form
-      setShowAddExercise(false);
-      setSelectedExercise('');
-      setNewExerciseWeights([0, 0, 0, 0]);
-      setNewExerciseSets(['3×5', '3×5', '3×5', '3×5']);
-      setNewExerciseActiveWeeks([true, true, true, true]);
-      
-    } catch (error) {
-      console.error('Error adding exercise to program:', error);
     }
   };
 
@@ -534,33 +769,11 @@ export default function PTCommand() {
     return 'pending';
   };
 
-  // Get all exercises from the program, organized by type
-  const getAllExercises = () => {
-    if (!currentProgram) return { strength: [], kettlebells: [] };
-    
-    const allExercises = new Set<string>();
-    
-    // Collect all exercise names from all workout types
-    ['heavy', 'medium', 'light'].forEach(workoutType => {
-      if (currentProgram.exercises[workoutType]) {
-        Object.keys(currentProgram.exercises[workoutType]).forEach(exercise => {
-          allExercises.add(exercise);
-        });
-      }
-    });
-
-    const strength: string[] = [];
-    const kettlebells: string[] = [];
-
-    allExercises.forEach(exercise => {
-      if (isKettlebellExercise(exercise)) {
-        kettlebells.push(exercise);
-      } else {
-        strength.push(exercise);
-      }
-    });
-
-    return { strength, kettlebells };
+  // Get slots for a specific week and day
+  const getSlotsForCell = (week: number, day: string): ProgramSlot[] => {
+    return programSlots.filter(
+      slot => slot.week_number === week && slot.day_of_week === day
+    );
   };
 
   if (currentTab === 'today') {
@@ -658,7 +871,7 @@ export default function PTCommand() {
               borderRadius: '16px'
             }}>
               <div style={{ fontSize: '18px', marginBottom: '8px' }}>No workout for today</div>
-              <div style={{ fontSize: '14px' }}>Go to Program tab to set up your workouts</div>
+              <div style={{ fontSize: '14px' }}>Go to Program tab to add exercises</div>
             </div>
           ) : (
             exercises.map(exercise => (
@@ -999,8 +1212,6 @@ export default function PTCommand() {
   }
 
   if (currentTab === 'program') {
-    const { strength, kettlebells } = getAllExercises();
-    
     return (
       <div style={{
         fontFamily: '"Inter", -apple-system, system-ui, sans-serif',
@@ -1047,10 +1258,10 @@ export default function PTCommand() {
         <div style={{ padding: '20px' }}>
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
             <div style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>
-              Program Setup
+              Program Grid
             </div>
             <div style={{ fontSize: '14px', color: '#888' }}>
-              Configure your training by exercise
+              Drag exercise cards between days and weeks
             </div>
           </div>
 
@@ -1107,772 +1318,71 @@ export default function PTCommand() {
             </div>
           </div>
 
-          {/* Week View Selector */}
+          {/* Program Grid */}
           <div style={{
             background: '#111',
-            borderRadius: '12px',
-            padding: '12px',
-            marginBottom: '24px',
-            display: 'flex',
-            gap: '8px',
-            justifyContent: 'center'
+            borderRadius: '16px',
+            padding: '24px',
+            border: '1px solid #333',
+            overflowX: 'auto'
           }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '12px', 
-              color: '#888', 
-              fontSize: '14px', 
-              marginRight: '16px' 
-            }}>
-              Viewing:
-            </div>
-            {[1, 2, 3, 4].map(week => (
-              <button
-                key={week}
-                onClick={() => setViewWeek(week)}
-                style={{
-                  background: viewWeek === week ? '#4ade80' : '#333',
-                  color: viewWeek === week ? '#000' : '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '8px 16px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 500
-                }}
-              >
-                Week {week}
-              </button>
-            ))}
-          </div>
-
-          {/* Section Tabs */}
-          <div style={{
-            background: '#111',
-            borderRadius: '12px',
-            padding: '6px',
-            marginBottom: '24px',
-            display: 'flex',
-            gap: '4px'
-          }}>
-            {[
-              { key: 'strength', label: 'Strength Training', count: strength.length },
-              { key: 'kettlebells', label: 'Kettlebells', count: kettlebells.length }
-            ].map(section => (
-              <button
-                key={section.key}
-                onClick={() => setCurrentSection(section.key as 'strength' | 'kettlebells')}
-                style={{
-                  flex: 1,
-                  background: currentSection === section.key ? '#4ade80' : 'transparent',
-                  color: currentSection === section.key ? '#000' : '#888',
-                  border: 'none',
-                  padding: '12px 16px',
-                  borderRadius: '8px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-              >
-                {section.label}
-                {section.count > 0 && (
-                  <span style={{
-                    background: currentSection === section.key ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)',
-                    borderRadius: '12px',
-                    padding: '2px 6px',
-                    fontSize: '12px',
-                    fontWeight: 600
-                  }}>
-                    {section.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Exercise Lists by Section */}
-          {currentSection === 'strength' && (
-            <>
-              {strength.length > 0 ? (
-                strength.map(exerciseName => {
-                  // Check if exercise is active for the viewed week
-                  const isActiveThisWeek = currentProgram?.exercises['heavy']?.[exerciseName]?.[`week_${viewWeek}` as keyof ExerciseData]?.active !== false;
-                  
-                  return (
-                    <div key={exerciseName} style={{
-                      background: isActiveThisWeek ? '#111' : '#0a0a0a',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      marginBottom: '24px',
-                      border: `1px solid ${isActiveThisWeek ? '#333' : '#222'}`,
-                      opacity: isActiveThisWeek ? 1 : 0.6
-                    }}>
-                      {/* Exercise Header with Delete Button and Active Toggle */}
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '16px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <h3 style={{ 
-                            fontSize: '18px', 
-                            fontWeight: 600, 
-                            color: isActiveThisWeek ? '#fbbf24' : '#666',
-                            margin: 0,
-                            textTransform: 'capitalize'
-                          }}>
-                            {EXERCISE_DISPLAY_NAMES[exerciseName] || exerciseName}
-                          </h3>
-                          {/* Active Toggle */}
-                          <button
-                            onClick={() => {
-                              ['heavy', 'medium', 'light'].forEach(day => {
-                                updateProgramData(day, exerciseName, viewWeek, 'active', !isActiveThisWeek);
-                              });
-                            }}
-                            style={{
-                              background: isActiveThisWeek ? '#4ade80' : '#666',
-                              color: isActiveThisWeek ? '#000' : '#fff',
-                              border: 'none',
-                              borderRadius: '6px',
-                              padding: '4px 8px',
-                              fontSize: '12px',
-                              fontWeight: 600,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Week {viewWeek}: {isActiveThisWeek ? 'Active' : 'Inactive'}
-                          </button>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setExerciseToDelete(exerciseName);
-                            setShowDeleteConfirm(true);
-                          }}
-                          style={{
-                            background: '#ef4444',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '6px',
-                            padding: '6px 12px',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                      
-                      {/* Day Tabs for this Exercise */}
-                      <div style={{
-                        background: '#0a0a0a',
-                        borderRadius: '8px',
-                        padding: '4px',
-                        marginBottom: '16px',
-                        display: 'flex',
-                        gap: '2px'
-                      }}>
-                        {['heavy', 'medium', 'light'].map(day => {
-                          const hasData = currentProgram?.exercises[day]?.[exerciseName];
-                          return (
-                            <div
-                              key={day}
-                              style={{
-                                flex: 1,
-                                padding: '8px 12px',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                fontWeight: 600,
-                                textAlign: 'center',
-                                textTransform: 'capitalize',
-                                background: hasData ? '#333' : '#222',
-                                color: hasData ? '#fff' : '#666'
-                              }}
-                            >
-                              {day} Day
-                            </div>
-                          );
-                        })}
-                      </div>
-                      
-                      {/* Progression Table */}
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{
-                          width: '100%',
-                          borderCollapse: 'collapse',
-                          fontFamily: '"JetBrains Mono", monospace',
-                          fontSize: '14px'
-                        }}>
-                          <thead>
-                            <tr>
-                              <th style={{ 
-                                background: '#1a1a1a', 
-                                padding: '12px', 
-                                textAlign: 'left', 
-                                border: '1px solid #333',
-                                color: '#4ade80'
-                              }}>
-                                Day / Metric
-                              </th>
-                              <th style={{ 
-                                background: '#1a1a1a', 
-                                padding: '12px', 
-                                textAlign: 'center', 
-                                border: '1px solid #333',
-                                color: '#4ade80'
-                              }}>
-                                Week {viewWeek}
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {['heavy', 'medium', 'light'].map(day => {
-                              const exerciseData = currentProgram?.exercises[day]?.[exerciseName];
-                              const weekData = exerciseData?.[`week_${viewWeek}` as keyof ExerciseData];
-                              
-                              if (!exerciseData || !weekData) {
-                                return (
-                                  <tr key={day}>
-                                    <td style={{ 
-                                      padding: '12px', 
-                                      border: '1px solid #222', 
-                                      background: '#0a0a0a',
-                                      color: '#666',
-                                      textTransform: 'capitalize'
-                                    }}>
-                                      {day}
-                                    </td>
-                                    <td style={{ 
-                                      padding: '12px', 
-                                      border: '1px solid #222', 
-                                      background: '#0a0a0a',
-                                      textAlign: 'center',
-                                      color: '#666',
-                                      fontStyle: 'italic'
-                                    }}>
-                                      Not programmed
-                                    </td>
-                                  </tr>
-                                );
-                              }
-
-                              const exerciseKey = exerciseName.toLowerCase() as keyof OneRMs;
-                              const oneRM = oneRMs[exerciseKey] || oneRMs.squat;
-                              const percentage = calculatePercentage(weekData.weight, oneRM);
-                              const volume = calculateVolume(weekData.sets, weekData.weight);
-
-                              return (
-                                <React.Fragment key={day}>
-                                  {/* Sets × Reps Row */}
-                                  <tr>
-                                    <td style={{ 
-                                      padding: '8px 12px', 
-                                      border: '1px solid #222', 
-                                      background: '#0a0a0a',
-                                      color: '#ccc',
-                                      textTransform: 'capitalize',
-                                      fontSize: '12px'
-                                    }}>
-                                      {day} Sets
-                                    </td>
-                                    <td style={{ 
-                                      padding: '8px', 
-                                      border: '1px solid #222', 
-                                      background: '#0a0a0a',
-                                      textAlign: 'center'
-                                    }}>
-                                      <input
-                                        type="text"
-                                        value={weekData.sets}
-                                        onChange={(e) => updateProgramData(day, exerciseName, viewWeek, 'sets', e.target.value)}
-                                        style={{
-                                          background: 'transparent',
-                                          border: '1px solid transparent',
-                                          color: '#4ade80',
-                                          textAlign: 'center',
-                                          width: '100%',
-                                          padding: '4px',
-                                          fontFamily: '"JetBrains Mono", monospace',
-                                          fontSize: '12px',
-                                          fontWeight: 600,
-                                          borderRadius: '4px'
-                                        }}
-                                      />
-                                    </td>
-                                  </tr>
-                                  
-                                  {/* Weight Row */}
-                                  <tr>
-                                    <td style={{ 
-                                      padding: '8px 12px', 
-                                      border: '1px solid #222', 
-                                      background: '#0a0a0a',
-                                      color: '#ccc',
-                                      fontSize: '12px'
-                                    }}>
-                                      {day} Weight
-                                    </td>
-                                    <td style={{ 
-                                      padding: '8px', 
-                                      border: '1px solid #222', 
-                                      background: '#0a0a0a',
-                                      textAlign: 'center'
-                                    }}>
-                                      <input
-                                        type="number"
-                                        value={weekData.weight}
-                                        onChange={(e) => updateProgramData(day, exerciseName, viewWeek, 'weight', Number(e.target.value))}
-                                        style={{
-                                          background: 'transparent',
-                                          border: '1px solid transparent',
-                                          color: '#fff',
-                                          textAlign: 'center',
-                                          width: '100%',
-                                          padding: '4px',
-                                          fontFamily: '"JetBrains Mono", monospace',
-                                          fontSize: '12px',
-                                          fontWeight: 600,
-                                          borderRadius: '4px'
-                                        }}
-                                      />
-                                    </td>
-                                  </tr>
-
-                                  {/* % RM Row */}
-                                  <tr>
-                                    <td style={{ 
-                                      padding: '8px 12px', 
-                                      border: '1px solid #222', 
-                                      background: '#0a0a0a',
-                                      color: '#ccc',
-                                      fontSize: '12px'
-                                    }}>
-                                      {day} % 1RM
-                                    </td>
-                                    <td style={{ 
-                                      padding: '8px', 
-                                      border: '1px solid #222', 
-                                      background: '#0a0a0a',
-                                      textAlign: 'center',
-                                      color: '#fbbf24',
-                                      fontStyle: 'italic',
-                                      fontSize: '12px'
-                                    }}>
-                                      {percentage}%
-                                    </td>
-                                  </tr>
-
-                                  {/* Volume Row */}
-                                  <tr>
-                                    <td style={{ 
-                                      padding: '8px 12px', 
-                                      border: '1px solid #222', 
-                                      background: '#0a0a0a',
-                                      color: '#ccc',
-                                      fontSize: '12px'
-                                    }}>
-                                      {day} Volume
-                                    </td>
-                                    <td style={{ 
-                                      padding: '8px', 
-                                      border: '1px solid #222', 
-                                      background: '#0a0a0a',
-                                      textAlign: 'center',
-                                      color: '#8b5cf6',
-                                      fontStyle: 'italic',
-                                      fontSize: '12px'
-                                    }}>
-                                      {volume}
-                                    </td>
-                                  </tr>
-                                </React.Fragment>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div style={{
-                  background: '#111',
-                  borderRadius: '16px',
-                  padding: '40px',
-                  textAlign: 'center',
-                  color: '#666'
-                }}>
-                  <p style={{ marginBottom: '16px' }}>No strength exercises yet.</p>
-                  <button
-                    onClick={() => setShowAddExercise(true)}
-                    style={{
-                      background: '#4ade80',
-                      color: '#000',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '12px 24px',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    + Add Strength Exercise
-                  </button>
-                </div>
-              )}
-
-              {/* Add Exercise Button for Strength */}
-              {strength.length > 0 && (
-                <div style={{ textAlign: 'center', marginTop: '24px' }}>
-                  <button
-                    onClick={() => setShowAddExercise(true)}
-                    style={{
-                      background: '#4ade80',
-                      color: '#000',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '12px 24px',
-                      fontSize: '16px',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    + Add Strength Exercise
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-
-          {currentSection === 'kettlebells' && (
             <div style={{
-              background: '#111',
-              borderRadius: '16px',
-              padding: '40px',
-              textAlign: 'center',
-              color: '#666'
+              display: 'grid',
+              gridTemplateColumns: '100px repeat(4, 1fr)',
+              gap: '12px',
+              minWidth: '800px'
             }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#fbbf24', marginBottom: '16px' }}>
-                Kettlebell Training
-              </h3>
-              <p style={{ marginBottom: '16px' }}>
-                {kettlebells.length > 0 
-                  ? `${kettlebells.length} kettlebell exercises configured`
-                  : 'No kettlebell exercises yet. Coming soon!'}
-              </p>
-              {kettlebells.length > 0 && (
-                <div style={{ fontSize: '14px', color: '#888' }}>
-                  {kettlebells.map(ex => EXERCISE_DISPLAY_NAMES[ex] || ex).join(', ')}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Delete Confirmation Modal */}
-          {showDeleteConfirm && (
-            <div
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(0, 0, 0, 0.9)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1000
-              }}
-              onClick={(e) => {
-                if (e.target === e.currentTarget) setShowDeleteConfirm(false);
-              }}
-            >
-              <div style={{
-                background: '#111',
-                borderRadius: '20px',
-                padding: '32px',
-                width: '400px',
-                border: '1px solid #333'
-              }}>
-                <div style={{
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  marginBottom: '16px',
+              {/* Header Row */}
+              <div></div> {/* Empty corner */}
+              {[1, 2, 3, 4].map(week => (
+                <div key={week} style={{
                   textAlign: 'center',
-                  color: '#ef4444'
-                }}>
-                  Delete Exercise
-                </div>
-                
-                <p style={{
-                  fontSize: '14px',
-                  color: '#ccc',
-                  marginBottom: '24px',
-                  textAlign: 'center'
-                }}>
-                  Are you sure you want to delete{' '}
-                  <strong style={{ color: '#fff' }}>
-                    {EXERCISE_DISPLAY_NAMES[exerciseToDelete] || exerciseToDelete}
-                  </strong>
-                  ? This will remove it from all workout days and cannot be undone.
-                </p>
-
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '12px'
-                }}>
-                  <button
-                    onClick={() => setShowDeleteConfirm(false)}
-                    style={{
-                      background: '#333',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '12px',
-                      padding: '12px',
-                      fontSize: '16px',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => deleteExercise(exerciseToDelete)}
-                    style={{
-                      background: '#ef4444',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '12px',
-                      padding: '12px',
-                      fontSize: '16px',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Add Exercise Modal */}
-          {showAddExercise && (
-            <div
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(0, 0, 0, 0.9)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1000
-              }}
-              onClick={(e) => {
-                if (e.target === e.currentTarget) setShowAddExercise(false);
-              }}
-            >
-              <div style={{
-                background: '#111',
-                borderRadius: '20px',
-                padding: '32px',
-                width: '400px',
-                border: '1px solid #333',
-                maxHeight: '80vh',
-                overflowY: 'auto'
-              }}>
-                <div style={{
-                  fontSize: '20px',
+                  fontSize: '16px',
                   fontWeight: 600,
-                  marginBottom: '24px',
-                  textAlign: 'center'
+                  color: '#4ade80',
+                  padding: '12px'
                 }}>
-                  Add Exercise to Program
+                  Week {week}
                 </div>
+              ))}
 
-                {/* Exercise Selection */}
-                <div style={{ marginBottom: '24px' }}>
+              {/* Grid Rows */}
+              {DAYS.map((day, dayIndex) => (
+                <React.Fragment key={day}>
+                  {/* Day Label */}
                   <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     fontSize: '14px',
+                    fontWeight: 600,
                     color: '#888',
-                    marginBottom: '8px'
+                    textTransform: 'capitalize'
                   }}>
-                    Select Exercise
+                    {DAY_DISPLAY_NAMES[dayIndex]}
                   </div>
-                  <select
-                    value={selectedExercise}
-                    onChange={(e) => setSelectedExercise(e.target.value)}
-                    style={{
-                      background: '#222',
-                      border: '2px solid #333',
-                      borderRadius: '8px',
-                      padding: '12px',
-                      color: '#fff',
-                      fontSize: '16px',
-                      width: '100%'
-                    }}
-                  >
-                    <option value="">Choose an exercise...</option>
-                    <optgroup label="Strength Training">
-                      {STRENGTH_EXERCISE_OPTIONS.map(ex => (
-                        <option key={ex} value={ex}>
-                          {EXERCISE_DISPLAY_NAMES[ex] || ex}
-                        </option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Kettlebells">
-                      {KETTLEBELL_EXERCISE_OPTIONS.map(ex => (
-                        <option key={ex} value={ex}>
-                          {EXERCISE_DISPLAY_NAMES[ex] || ex}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </select>
-                </div>
 
-                {/* Week Configuration */}
-                {selectedExercise && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <div style={{
-                      fontSize: '14px',
-                      color: '#888',
-                      marginBottom: '12px'
-                    }}>
-                      4-Week Progression (applies to all days)
-                    </div>
-                    {[1, 2, 3, 4].map((week, index) => (
-                      <div key={week} style={{
-                        marginBottom: '12px'
-                      }}>
-                        <div style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '8px', 
-                          marginBottom: '8px' 
-                        }}>
-                          <div style={{ fontSize: '14px', color: '#ccc', width: '60px' }}>
-                            Week {week}:
-                          </div>
-                          <input
-                            type="checkbox"
-                            checked={newExerciseActiveWeeks[index]}
-                            onChange={(e) => {
-                              const newActiveWeeks = [...newExerciseActiveWeeks];
-                              newActiveWeeks[index] = e.target.checked;
-                              setNewExerciseActiveWeeks(newActiveWeeks);
-                            }}
-                            style={{
-                              width: '16px',
-                              height: '16px'
-                            }}
-                          />
-                          <div style={{ fontSize: '12px', color: '#888' }}>
-                            Active
-                          </div>
-                        </div>
-                        
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 1fr',
-                          gap: '8px',
-                          opacity: newExerciseActiveWeeks[index] ? 1 : 0.5
-                        }}>
-                          <input
-                            type="text"
-                            value={newExerciseSets[index]}
-                            onChange={(e) => {
-                              const newSets = [...newExerciseSets];
-                              newSets[index] = e.target.value;
-                              setNewExerciseSets(newSets);
-                            }}
-                            placeholder="3×5"
-                            disabled={!newExerciseActiveWeeks[index]}
-                            style={{
-                              background: newExerciseActiveWeeks[index] ? '#222' : '#111',
-                              border: '1px solid #333',
-                              borderRadius: '6px',
-                              padding: '8px',
-                              color: newExerciseActiveWeeks[index] ? '#fff' : '#666',
-                              textAlign: 'center'
-                            }}
-                          />
-                          <input
-                            type="number"
-                            value={newExerciseWeights[index]}
-                            onChange={(e) => {
-                              const newWeights = [...newExerciseWeights];
-                              newWeights[index] = Number(e.target.value);
-                              setNewExerciseWeights(newWeights);
-                            }}
-                            placeholder="Weight"
-                            disabled={!newExerciseActiveWeeks[index]}
-                            style={{
-                              background: newExerciseActiveWeeks[index] ? '#222' : '#111',
-                              border: '1px solid #333',
-                              borderRadius: '6px',
-                              padding: '8px',
-                              color: newExerciseActiveWeeks[index] ? '#fff' : '#666',
-                              textAlign: 'center'
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '12px'
-                }}>
-                  <button
-                    onClick={() => setShowAddExercise(false)}
-                    style={{
-                      background: '#333',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '12px',
-                      padding: '12px',
-                      fontSize: '16px',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={addExerciseToProgram}
-                    disabled={!selectedExercise}
-                    style={{
-                      background: selectedExercise ? '#4ade80' : '#333',
-                      color: selectedExercise ? '#000' : '#666',
-                      border: 'none',
-                      borderRadius: '12px',
-                      padding: '12px',
-                      fontSize: '16px',
-                      fontWeight: 600,
-                      cursor: selectedExercise ? 'pointer' : 'not-allowed'
-                    }}
-                  >
-                    Add Exercise
-                  </button>
-                </div>
-              </div>
+                  {/* Week Cells */}
+                  {[1, 2, 3, 4].map(week => {
+                    const slots = getSlotsForCell(week, day);
+                    return (
+                      <DropZone
+                        key={`${week}-${day}`}
+                        week={week}
+                        day={day}
+                        slots={slots}
+                        oneRMs={oneRMs}
+                        onDrop={handleCardDrop}
+                        onUpdateSlot={updateProgramSlot}
+                        onDeleteSlot={deleteProgramSlot}
+                        onAddCard={addProgramSlot}
+                      />
+                    );
+                  })}
+                </React.Fragment>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       </div>
     );
