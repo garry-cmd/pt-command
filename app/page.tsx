@@ -41,6 +41,7 @@ interface OneRMs {
 interface WeekData {
   sets: string;
   weight: number;
+  active?: boolean; // NEW: Whether this exercise is active for this week
 }
 
 interface ExerciseData {
@@ -102,6 +103,7 @@ const parseSetReps = (setRepsString: string) => {
 };
 
 const calculatePercentage = (weight: number, oneRM: number) => {
+  if (oneRM === 0) return 0;
   return Math.round((weight / oneRM) * 100);
 };
 
@@ -121,6 +123,7 @@ export default function PTCommand() {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [currentWorkout, setCurrentWorkout] = useState<any>(null);
   const [currentSection, setCurrentSection] = useState<'strength' | 'kettlebells'>('strength');
+  const [viewWeek, setViewWeek] = useState(1); // NEW: Which week we're viewing in program tab
   
   // Today Tab State
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -145,6 +148,7 @@ export default function PTCommand() {
   const [selectedExercise, setSelectedExercise] = useState('');
   const [newExerciseWeights, setNewExerciseWeights] = useState([0, 0, 0, 0]);
   const [newExerciseSets, setNewExerciseSets] = useState(['3×5', '3×5', '3×5', '3×5']);
+  const [newExerciseActiveWeeks, setNewExerciseActiveWeeks] = useState([true, true, true, true]);
 
   // Delete confirmation state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -259,7 +263,9 @@ export default function PTCommand() {
       for (const [exerciseName, exerciseData] of Object.entries(programExercises)) {
         const typedExerciseData = exerciseData as ExerciseData;
         const weekData = typedExerciseData[`week_${currentWeek}` as keyof ExerciseData];
-        if (weekData) {
+        
+        // Only include if exercise is active for this week
+        if (weekData && weekData.active !== false) {
           const { sets: numSets, reps } = parseSetReps(weekData.sets);
           
           for (let i = 1; i <= numSets; i++) {
@@ -347,7 +353,7 @@ export default function PTCommand() {
     }
   };
 
-  const updateProgramData = async (day: string, exercise: string, week: number, field: 'sets' | 'weight', value: string | number) => {
+  const updateProgramData = async (day: string, exercise: string, week: number, field: 'sets' | 'weight' | 'active', value: string | number | boolean) => {
     if (!currentProgram) return;
 
     const currentExercises = { ...currentProgram.exercises };
@@ -439,10 +445,10 @@ export default function PTCommand() {
         }
         
         currentExercises[workoutType][selectedExercise] = {
-          week_1: { sets: newExerciseSets[0], weight: newExerciseWeights[0] },
-          week_2: { sets: newExerciseSets[1], weight: newExerciseWeights[1] },
-          week_3: { sets: newExerciseSets[2], weight: newExerciseWeights[2] },
-          week_4: { sets: newExerciseSets[3], weight: newExerciseWeights[3] }
+          week_1: { sets: newExerciseSets[0], weight: newExerciseWeights[0], active: newExerciseActiveWeeks[0] },
+          week_2: { sets: newExerciseSets[1], weight: newExerciseWeights[1], active: newExerciseActiveWeeks[1] },
+          week_3: { sets: newExerciseSets[2], weight: newExerciseWeights[2], active: newExerciseActiveWeeks[2] },
+          week_4: { sets: newExerciseSets[3], weight: newExerciseWeights[3], active: newExerciseActiveWeeks[3] }
         };
       });
 
@@ -462,6 +468,7 @@ export default function PTCommand() {
       setSelectedExercise('');
       setNewExerciseWeights([0, 0, 0, 0]);
       setNewExerciseSets(['3×5', '3×5', '3×5', '3×5']);
+      setNewExerciseActiveWeeks([true, true, true, true]);
       
     } catch (error) {
       console.error('Error adding exercise to program:', error);
@@ -1100,6 +1107,46 @@ export default function PTCommand() {
             </div>
           </div>
 
+          {/* Week View Selector */}
+          <div style={{
+            background: '#111',
+            borderRadius: '12px',
+            padding: '12px',
+            marginBottom: '24px',
+            display: 'flex',
+            gap: '8px',
+            justifyContent: 'center'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '12px', 
+              color: '#888', 
+              fontSize: '14px', 
+              marginRight: '16px' 
+            }}>
+              Viewing:
+            </div>
+            {[1, 2, 3, 4].map(week => (
+              <button
+                key={week}
+                onClick={() => setViewWeek(week)}
+                style={{
+                  background: viewWeek === week ? '#4ade80' : '#333',
+                  color: viewWeek === week ? '#000' : '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500
+                }}
+              >
+                Week {week}
+              </button>
+            ))}
+          </div>
+
           {/* Section Tabs */}
           <div style={{
             background: '#111',
@@ -1152,237 +1199,308 @@ export default function PTCommand() {
           {currentSection === 'strength' && (
             <>
               {strength.length > 0 ? (
-                strength.map(exerciseName => (
-                  <div key={exerciseName} style={{
-                    background: '#111',
-                    borderRadius: '16px',
-                    padding: '24px',
-                    marginBottom: '24px',
-                    border: '1px solid #333'
-                  }}>
-                    {/* Exercise Header with Delete Button */}
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '16px'
+                strength.map(exerciseName => {
+                  // Check if exercise is active for the viewed week
+                  const isActiveThisWeek = currentProgram?.exercises['heavy']?.[exerciseName]?.[`week_${viewWeek}` as keyof ExerciseData]?.active !== false;
+                  
+                  return (
+                    <div key={exerciseName} style={{
+                      background: isActiveThisWeek ? '#111' : '#0a0a0a',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      marginBottom: '24px',
+                      border: `1px solid ${isActiveThisWeek ? '#333' : '#222'}`,
+                      opacity: isActiveThisWeek ? 1 : 0.6
                     }}>
-                      <h3 style={{ 
-                        fontSize: '18px', 
-                        fontWeight: 600, 
-                        color: '#fbbf24', 
-                        margin: 0,
-                        textTransform: 'capitalize'
+                      {/* Exercise Header with Delete Button and Active Toggle */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '16px'
                       }}>
-                        {EXERCISE_DISPLAY_NAMES[exerciseName] || exerciseName}
-                      </h3>
-                      <button
-                        onClick={() => {
-                          setExerciseToDelete(exerciseName);
-                          setShowDeleteConfirm(true);
-                        }}
-                        style={{
-                          background: '#ef4444',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '6px',
-                          padding: '6px 12px',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                    
-                    {/* Day Tabs for this Exercise */}
-                    <div style={{
-                      background: '#0a0a0a',
-                      borderRadius: '8px',
-                      padding: '4px',
-                      marginBottom: '16px',
-                      display: 'flex',
-                      gap: '2px'
-                    }}>
-                      {['heavy', 'medium', 'light'].map(day => {
-                        const hasData = currentProgram?.exercises[day]?.[exerciseName];
-                        return (
-                          <div
-                            key={day}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <h3 style={{ 
+                            fontSize: '18px', 
+                            fontWeight: 600, 
+                            color: isActiveThisWeek ? '#fbbf24' : '#666',
+                            margin: 0,
+                            textTransform: 'capitalize'
+                          }}>
+                            {EXERCISE_DISPLAY_NAMES[exerciseName] || exerciseName}
+                          </h3>
+                          {/* Active Toggle */}
+                          <button
+                            onClick={() => {
+                              ['heavy', 'medium', 'light'].forEach(day => {
+                                updateProgramData(day, exerciseName, viewWeek, 'active', !isActiveThisWeek);
+                              });
+                            }}
                             style={{
-                              flex: 1,
-                              padding: '8px 12px',
+                              background: isActiveThisWeek ? '#4ade80' : '#666',
+                              color: isActiveThisWeek ? '#000' : '#fff',
+                              border: 'none',
                               borderRadius: '6px',
+                              padding: '4px 8px',
                               fontSize: '12px',
                               fontWeight: 600,
-                              textAlign: 'center',
-                              textTransform: 'capitalize',
-                              background: hasData ? '#333' : '#222',
-                              color: hasData ? '#fff' : '#666'
+                              cursor: 'pointer'
                             }}
                           >
-                            {day} Day
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    {/* Progression Table */}
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{
-                        width: '100%',
-                        borderCollapse: 'collapse',
-                        fontFamily: '"JetBrains Mono", monospace',
-                        fontSize: '14px'
+                            Week {viewWeek}: {isActiveThisWeek ? 'Active' : 'Inactive'}
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setExerciseToDelete(exerciseName);
+                            setShowDeleteConfirm(true);
+                          }}
+                          style={{
+                            background: '#ef4444',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '6px 12px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                      
+                      {/* Day Tabs for this Exercise */}
+                      <div style={{
+                        background: '#0a0a0a',
+                        borderRadius: '8px',
+                        padding: '4px',
+                        marginBottom: '16px',
+                        display: 'flex',
+                        gap: '2px'
                       }}>
-                        <thead>
-                          <tr>
-                            <th style={{ 
-                              background: '#1a1a1a', 
-                              padding: '12px', 
-                              textAlign: 'left', 
-                              border: '1px solid #333',
-                              color: '#4ade80'
-                            }}>
-                              Day / Week
-                            </th>
-                            {[1, 2, 3, 4].map(week => (
-                              <th key={week} style={{ 
+                        {['heavy', 'medium', 'light'].map(day => {
+                          const hasData = currentProgram?.exercises[day]?.[exerciseName];
+                          return (
+                            <div
+                              key={day}
+                              style={{
+                                flex: 1,
+                                padding: '8px 12px',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                textAlign: 'center',
+                                textTransform: 'capitalize',
+                                background: hasData ? '#333' : '#222',
+                                color: hasData ? '#fff' : '#666'
+                              }}
+                            >
+                              {day} Day
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Progression Table */}
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{
+                          width: '100%',
+                          borderCollapse: 'collapse',
+                          fontFamily: '"JetBrains Mono", monospace',
+                          fontSize: '14px'
+                        }}>
+                          <thead>
+                            <tr>
+                              <th style={{ 
+                                background: '#1a1a1a', 
+                                padding: '12px', 
+                                textAlign: 'left', 
+                                border: '1px solid #333',
+                                color: '#4ade80'
+                              }}>
+                                Day / Metric
+                              </th>
+                              <th style={{ 
                                 background: '#1a1a1a', 
                                 padding: '12px', 
                                 textAlign: 'center', 
                                 border: '1px solid #333',
                                 color: '#4ade80'
                               }}>
-                                Week {week}
+                                Week {viewWeek}
                               </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {['heavy', 'medium', 'light'].map(day => {
-                            const exerciseData = currentProgram?.exercises[day]?.[exerciseName];
-                            if (!exerciseData) {
-                              return (
-                                <tr key={day}>
-                                  <td style={{ 
-                                    padding: '12px', 
-                                    border: '1px solid #222', 
-                                    background: '#0a0a0a',
-                                    color: '#666',
-                                    textTransform: 'capitalize'
-                                  }}>
-                                    {day}
-                                  </td>
-                                  <td colSpan={4} style={{ 
-                                    padding: '12px', 
-                                    border: '1px solid #222', 
-                                    background: '#0a0a0a',
-                                    textAlign: 'center',
-                                    color: '#666',
-                                    fontStyle: 'italic'
-                                  }}>
-                                    Not programmed
-                                  </td>
-                                </tr>
-                              );
-                            }
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {['heavy', 'medium', 'light'].map(day => {
+                              const exerciseData = currentProgram?.exercises[day]?.[exerciseName];
+                              const weekData = exerciseData?.[`week_${viewWeek}` as keyof ExerciseData];
+                              
+                              if (!exerciseData || !weekData) {
+                                return (
+                                  <tr key={day}>
+                                    <td style={{ 
+                                      padding: '12px', 
+                                      border: '1px solid #222', 
+                                      background: '#0a0a0a',
+                                      color: '#666',
+                                      textTransform: 'capitalize'
+                                    }}>
+                                      {day}
+                                    </td>
+                                    <td style={{ 
+                                      padding: '12px', 
+                                      border: '1px solid #222', 
+                                      background: '#0a0a0a',
+                                      textAlign: 'center',
+                                      color: '#666',
+                                      fontStyle: 'italic'
+                                    }}>
+                                      Not programmed
+                                    </td>
+                                  </tr>
+                                );
+                              }
 
-                            return (
-                              <React.Fragment key={day}>
-                                {/* Sets × Reps Row */}
-                                <tr>
-                                  <td style={{ 
-                                    padding: '8px 12px', 
-                                    border: '1px solid #222', 
-                                    background: '#0a0a0a',
-                                    color: '#ccc',
-                                    textTransform: 'capitalize',
-                                    fontSize: '12px'
-                                  }}>
-                                    {day} Sets
-                                  </td>
-                                  {[1, 2, 3, 4].map(week => {
-                                    const weekData = (exerciseData as ExerciseData)[`week_${week}` as keyof ExerciseData];
-                                    return (
-                                      <td key={week} style={{ 
-                                        padding: '8px', 
-                                        border: '1px solid #222', 
-                                        background: '#0a0a0a',
-                                        textAlign: 'center'
-                                      }}>
-                                        <input
-                                          type="text"
-                                          value={weekData.sets}
-                                          onChange={(e) => updateProgramData(day, exerciseName, week, 'sets', e.target.value)}
-                                          style={{
-                                            background: 'transparent',
-                                            border: '1px solid transparent',
-                                            color: '#4ade80',
-                                            textAlign: 'center',
-                                            width: '100%',
-                                            padding: '4px',
-                                            fontFamily: '"JetBrains Mono", monospace',
-                                            fontSize: '12px',
-                                            fontWeight: 600,
-                                            borderRadius: '4px'
-                                          }}
-                                        />
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                                
-                                {/* Weight Row */}
-                                <tr>
-                                  <td style={{ 
-                                    padding: '8px 12px', 
-                                    border: '1px solid #222', 
-                                    background: '#0a0a0a',
-                                    color: '#ccc',
-                                    fontSize: '12px'
-                                  }}>
-                                    {day} Weight
-                                  </td>
-                                  {[1, 2, 3, 4].map(week => {
-                                    const weekData = (exerciseData as ExerciseData)[`week_${week}` as keyof ExerciseData];
-                                    return (
-                                      <td key={week} style={{ 
-                                        padding: '8px', 
-                                        border: '1px solid #222', 
-                                        background: '#0a0a0a',
-                                        textAlign: 'center'
-                                      }}>
-                                        <input
-                                          type="number"
-                                          value={weekData.weight}
-                                          onChange={(e) => updateProgramData(day, exerciseName, week, 'weight', Number(e.target.value))}
-                                          style={{
-                                            background: 'transparent',
-                                            border: '1px solid transparent',
-                                            color: '#fff',
-                                            textAlign: 'center',
-                                            width: '100%',
-                                            padding: '4px',
-                                            fontFamily: '"JetBrains Mono", monospace',
-                                            fontSize: '12px',
-                                            fontWeight: 600,
-                                            borderRadius: '4px'
-                                          }}
-                                        />
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                              </React.Fragment>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                              const exerciseKey = exerciseName.toLowerCase() as keyof OneRMs;
+                              const oneRM = oneRMs[exerciseKey] || oneRMs.squat;
+                              const percentage = calculatePercentage(weekData.weight, oneRM);
+                              const volume = calculateVolume(weekData.sets, weekData.weight);
+
+                              return (
+                                <React.Fragment key={day}>
+                                  {/* Sets × Reps Row */}
+                                  <tr>
+                                    <td style={{ 
+                                      padding: '8px 12px', 
+                                      border: '1px solid #222', 
+                                      background: '#0a0a0a',
+                                      color: '#ccc',
+                                      textTransform: 'capitalize',
+                                      fontSize: '12px'
+                                    }}>
+                                      {day} Sets
+                                    </td>
+                                    <td style={{ 
+                                      padding: '8px', 
+                                      border: '1px solid #222', 
+                                      background: '#0a0a0a',
+                                      textAlign: 'center'
+                                    }}>
+                                      <input
+                                        type="text"
+                                        value={weekData.sets}
+                                        onChange={(e) => updateProgramData(day, exerciseName, viewWeek, 'sets', e.target.value)}
+                                        style={{
+                                          background: 'transparent',
+                                          border: '1px solid transparent',
+                                          color: '#4ade80',
+                                          textAlign: 'center',
+                                          width: '100%',
+                                          padding: '4px',
+                                          fontFamily: '"JetBrains Mono", monospace',
+                                          fontSize: '12px',
+                                          fontWeight: 600,
+                                          borderRadius: '4px'
+                                        }}
+                                      />
+                                    </td>
+                                  </tr>
+                                  
+                                  {/* Weight Row */}
+                                  <tr>
+                                    <td style={{ 
+                                      padding: '8px 12px', 
+                                      border: '1px solid #222', 
+                                      background: '#0a0a0a',
+                                      color: '#ccc',
+                                      fontSize: '12px'
+                                    }}>
+                                      {day} Weight
+                                    </td>
+                                    <td style={{ 
+                                      padding: '8px', 
+                                      border: '1px solid #222', 
+                                      background: '#0a0a0a',
+                                      textAlign: 'center'
+                                    }}>
+                                      <input
+                                        type="number"
+                                        value={weekData.weight}
+                                        onChange={(e) => updateProgramData(day, exerciseName, viewWeek, 'weight', Number(e.target.value))}
+                                        style={{
+                                          background: 'transparent',
+                                          border: '1px solid transparent',
+                                          color: '#fff',
+                                          textAlign: 'center',
+                                          width: '100%',
+                                          padding: '4px',
+                                          fontFamily: '"JetBrains Mono", monospace',
+                                          fontSize: '12px',
+                                          fontWeight: 600,
+                                          borderRadius: '4px'
+                                        }}
+                                      />
+                                    </td>
+                                  </tr>
+
+                                  {/* % RM Row */}
+                                  <tr>
+                                    <td style={{ 
+                                      padding: '8px 12px', 
+                                      border: '1px solid #222', 
+                                      background: '#0a0a0a',
+                                      color: '#ccc',
+                                      fontSize: '12px'
+                                    }}>
+                                      {day} % 1RM
+                                    </td>
+                                    <td style={{ 
+                                      padding: '8px', 
+                                      border: '1px solid #222', 
+                                      background: '#0a0a0a',
+                                      textAlign: 'center',
+                                      color: '#fbbf24',
+                                      fontStyle: 'italic',
+                                      fontSize: '12px'
+                                    }}>
+                                      {percentage}%
+                                    </td>
+                                  </tr>
+
+                                  {/* Volume Row */}
+                                  <tr>
+                                    <td style={{ 
+                                      padding: '8px 12px', 
+                                      border: '1px solid #222', 
+                                      background: '#0a0a0a',
+                                      color: '#ccc',
+                                      fontSize: '12px'
+                                    }}>
+                                      {day} Volume
+                                    </td>
+                                    <td style={{ 
+                                      padding: '8px', 
+                                      border: '1px solid #222', 
+                                      background: '#0a0a0a',
+                                      textAlign: 'center',
+                                      color: '#8b5cf6',
+                                      fontStyle: 'italic',
+                                      fontSize: '12px'
+                                    }}>
+                                      {volume}
+                                    </td>
+                                  </tr>
+                                </React.Fragment>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div style={{
                   background: '#111',
@@ -1570,7 +1688,9 @@ export default function PTCommand() {
                 borderRadius: '20px',
                 padding: '32px',
                 width: '400px',
-                border: '1px solid #333'
+                border: '1px solid #333',
+                maxHeight: '80vh',
+                overflowY: 'auto'
               }}>
                 <div style={{
                   fontSize: '20px',
@@ -1633,51 +1753,80 @@ export default function PTCommand() {
                     </div>
                     {[1, 2, 3, 4].map((week, index) => (
                       <div key={week} style={{
-                        display: 'grid',
-                        gridTemplateColumns: '80px 1fr 1fr',
-                        gap: '12px',
-                        alignItems: 'center',
                         marginBottom: '12px'
                       }}>
-                        <div style={{ fontSize: '14px', color: '#ccc' }}>
-                          Week {week}:
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '8px', 
+                          marginBottom: '8px' 
+                        }}>
+                          <div style={{ fontSize: '14px', color: '#ccc', width: '60px' }}>
+                            Week {week}:
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={newExerciseActiveWeeks[index]}
+                            onChange={(e) => {
+                              const newActiveWeeks = [...newExerciseActiveWeeks];
+                              newActiveWeeks[index] = e.target.checked;
+                              setNewExerciseActiveWeeks(newActiveWeeks);
+                            }}
+                            style={{
+                              width: '16px',
+                              height: '16px'
+                            }}
+                          />
+                          <div style={{ fontSize: '12px', color: '#888' }}>
+                            Active
+                          </div>
                         </div>
-                        <input
-                          type="text"
-                          value={newExerciseSets[index]}
-                          onChange={(e) => {
-                            const newSets = [...newExerciseSets];
-                            newSets[index] = e.target.value;
-                            setNewExerciseSets(newSets);
-                          }}
-                          placeholder="3×5"
-                          style={{
-                            background: '#222',
-                            border: '1px solid #333',
-                            borderRadius: '6px',
-                            padding: '8px',
-                            color: '#fff',
-                            textAlign: 'center'
-                          }}
-                        />
-                        <input
-                          type="number"
-                          value={newExerciseWeights[index]}
-                          onChange={(e) => {
-                            const newWeights = [...newExerciseWeights];
-                            newWeights[index] = Number(e.target.value);
-                            setNewExerciseWeights(newWeights);
-                          }}
-                          placeholder="Weight"
-                          style={{
-                            background: '#222',
-                            border: '1px solid #333',
-                            borderRadius: '6px',
-                            padding: '8px',
-                            color: '#fff',
-                            textAlign: 'center'
-                          }}
-                        />
+                        
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: '8px',
+                          opacity: newExerciseActiveWeeks[index] ? 1 : 0.5
+                        }}>
+                          <input
+                            type="text"
+                            value={newExerciseSets[index]}
+                            onChange={(e) => {
+                              const newSets = [...newExerciseSets];
+                              newSets[index] = e.target.value;
+                              setNewExerciseSets(newSets);
+                            }}
+                            placeholder="3×5"
+                            disabled={!newExerciseActiveWeeks[index]}
+                            style={{
+                              background: newExerciseActiveWeeks[index] ? '#222' : '#111',
+                              border: '1px solid #333',
+                              borderRadius: '6px',
+                              padding: '8px',
+                              color: newExerciseActiveWeeks[index] ? '#fff' : '#666',
+                              textAlign: 'center'
+                            }}
+                          />
+                          <input
+                            type="number"
+                            value={newExerciseWeights[index]}
+                            onChange={(e) => {
+                              const newWeights = [...newExerciseWeights];
+                              newWeights[index] = Number(e.target.value);
+                              setNewExerciseWeights(newWeights);
+                            }}
+                            placeholder="Weight"
+                            disabled={!newExerciseActiveWeeks[index]}
+                            style={{
+                              background: newExerciseActiveWeeks[index] ? '#222' : '#111',
+                              border: '1px solid #333',
+                              borderRadius: '6px',
+                              padding: '8px',
+                              color: newExerciseActiveWeeks[index] ? '#fff' : '#666',
+                              textAlign: 'center'
+                            }}
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
