@@ -54,6 +54,14 @@ interface Program {
   name: string;
 }
 
+// NEW: Workout tracking interface
+interface Workout {
+  id: string;
+  started_at: string | null;
+  completed_at: string | null;
+  duration_seconds: number | null;
+}
+
 // Exercise options
 const EXERCISE_OPTIONS = [
   'squat',
@@ -94,6 +102,13 @@ const calculatePercentage = (weight: number, oneRM: number) => {
 const calculateVolume = (setsReps: string, weight: number) => {
   const { sets, reps } = parseSetReps(setsReps);
   return sets * reps * weight;
+};
+
+const formatDuration = (seconds: number | null) => {
+  if (!seconds) return '';
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
 // Drag and drop functionality
@@ -386,6 +401,7 @@ export default function PTCommand() {
   
   // Today Tab State
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(null); // NEW: Track current workout
   const [editModal, setEditModal] = useState<EditModalData>({
     setItem: null,
     exercise: null,
@@ -503,6 +519,7 @@ export default function PTCommand() {
     if (todaySlots.length === 0) {
       console.log(`[Today Tab] No exercises scheduled for ${currentDay} Week ${currentWeek}`);
       setExercises([]);
+      setCurrentWorkout(null); // NEW: Clear current workout
       return;
     }
 
@@ -519,6 +536,12 @@ export default function PTCommand() {
 
       if (existingWorkout) {
         console.log('[Today Tab] Found existing workout, converting...');
+        setCurrentWorkout({
+          id: existingWorkout.id,
+          started_at: existingWorkout.started_at,
+          completed_at: existingWorkout.completed_at,
+          duration_seconds: existingWorkout.duration_seconds
+        }); // NEW: Set current workout
         convertWorkoutToExercises(existingWorkout);
       } else {
         console.log('[Today Tab] Creating new workout from slots...');
@@ -535,19 +558,28 @@ export default function PTCommand() {
     try {
       console.log(`[Today Tab] Creating workout from ${slots.length} slots`);
 
-      // Create workout
+      // NEW: Create workout with started_at timestamp
       const { data: workout, error: workoutError } = await supabase
         .from('workouts')
         .insert({
           program_id: currentProgram.id,
           workout_type: workoutType,
           week_number: currentWeek,
-          date: new Date().toISOString().split('T')[0]
+          date: new Date().toISOString().split('T')[0],
+          started_at: new Date().toISOString() // NEW: Mark workout as started
         })
         .select()
         .single();
 
       if (workoutError) throw workoutError;
+
+      // NEW: Set current workout
+      setCurrentWorkout({
+        id: workout.id,
+        started_at: workout.started_at,
+        completed_at: workout.completed_at,
+        duration_seconds: workout.duration_seconds
+      });
 
       // Create sets from program slots
       const workoutSets = [];
@@ -623,6 +655,48 @@ export default function PTCommand() {
 
     console.log(`[Today Tab] Converted to ${exerciseList.length} exercises`);
     setExercises(exerciseList);
+  };
+
+  // NEW: Finish workout function
+  const finishWorkout = async () => {
+    if (!currentWorkout || !currentWorkout.id) {
+      console.error('No current workout to finish');
+      return;
+    }
+
+    try {
+      console.log('[Today Tab] Finishing workout:', currentWorkout.id);
+      
+      const completedAt = new Date().toISOString();
+      const startedAt = new Date(currentWorkout.started_at || new Date());
+      const durationSeconds = Math.floor((new Date().getTime() - startedAt.getTime()) / 1000);
+
+      const { error } = await supabase
+        .from('workouts')
+        .update({
+          completed_at: completedAt,
+          duration_seconds: durationSeconds
+        })
+        .eq('id', currentWorkout.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setCurrentWorkout(prev => prev ? {
+        ...prev,
+        completed_at: completedAt,
+        duration_seconds: durationSeconds
+      } : null);
+
+      console.log(`[Today Tab] Workout finished! Duration: ${formatDuration(durationSeconds)}`);
+      
+      // Show success message
+      alert(`🎉 Workout completed!\n\nDuration: ${formatDuration(durationSeconds)}\nWorkout saved to history!`);
+      
+    } catch (error) {
+      console.error('Error finishing workout:', error);
+      alert('Error finishing workout. Please try again.');
+    }
   };
 
   const updateOneRM = async (exercise: keyof OneRMs, value: number) => {
@@ -840,6 +914,16 @@ export default function PTCommand() {
     );
   };
 
+  // NEW: Check if workout is complete (all exercises completed)
+  const isWorkoutComplete = () => {
+    return exercises.length > 0 && exercises.every(exercise => exercise.completed);
+  };
+
+  // NEW: Check if workout is already finished
+  const isWorkoutFinished = () => {
+    return currentWorkout?.completed_at != null;
+  };
+
   if (currentTab === 'today') {
     return (
       <div style={{
@@ -893,6 +977,23 @@ export default function PTCommand() {
             <div style={{ fontSize: '14px', color: '#888' }}>
               Week {currentWeek} • {currentProgram?.name || 'No Program'}
             </div>
+            
+            {/* NEW: Workout status */}
+            {currentWorkout && (
+              <div style={{ 
+                marginTop: '8px', 
+                fontSize: '12px', 
+                color: isWorkoutFinished() ? '#4ade80' : '#888' 
+              }}>
+                {isWorkoutFinished() ? (
+                  `✅ Completed in ${formatDuration(currentWorkout.duration_seconds)}`
+                ) : currentWorkout.started_at ? (
+                  `🏃 In Progress • Started ${new Date(currentWorkout.started_at).toLocaleTimeString()}`
+                ) : (
+                  '⏳ Ready to start'
+                )}
+              </div>
+            )}
           </div>
 
           {/* Week Selector */}
@@ -952,113 +1053,186 @@ export default function PTCommand() {
               <div style={{ fontSize: '14px' }}>Go to Program tab to add exercises</div>
             </div>
           ) : (
-            exercises.map(exercise => (
-              <div key={exercise.id} style={{
-                marginBottom: '32px',
-                background: '#111',
-                borderRadius: '16px',
-                padding: '20px'
-              }}>
-                {/* Exercise Header */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  marginBottom: '16px'
+            <>
+              {exercises.map(exercise => (
+                <div key={exercise.id} style={{
+                  marginBottom: '32px',
+                  background: '#111',
+                  borderRadius: '16px',
+                  padding: '20px'
                 }}>
-                  <span style={{ fontSize: '18px', fontWeight: 600, color: '#fff' }}>
-                    {exercise.name}
-                  </span>
+                  {/* Exercise Header */}
                   <div style={{
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    fontSize: '10px',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    background: getExerciseStatus(exercise) === 'complete' ? '#22c55e' : 
-                               getExerciseStatus(exercise) === 'active' ? '#fbbf24' : '#666',
-                    color: getExerciseStatus(exercise) === 'complete' || getExerciseStatus(exercise) === 'active' ? '#000' : '#fff'
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginBottom: '16px'
                   }}>
-                    {getExerciseStatus(exercise) === 'complete' ? 'Complete' :
-                     getExerciseStatus(exercise) === 'active' ? 'Active' : 'Pending'}
+                    <span style={{ fontSize: '18px', fontWeight: 600, color: '#fff' }}>
+                      {exercise.name}
+                    </span>
+                    <div style={{
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      background: getExerciseStatus(exercise) === 'complete' ? '#22c55e' : 
+                                 getExerciseStatus(exercise) === 'active' ? '#fbbf24' : '#666',
+                      color: getExerciseStatus(exercise) === 'complete' || getExerciseStatus(exercise) === 'active' ? '#000' : '#fff'
+                    }}>
+                      {getExerciseStatus(exercise) === 'complete' ? 'Complete' :
+                       getExerciseStatus(exercise) === 'active' ? 'Active' : 'Pending'}
+                    </div>
+                  </div>
+
+                  {/* Sets */}
+                  {exercise.sets.map(set => (
+                    <div
+                      key={set.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '16px 0',
+                        borderBottom: '1px solid #222',
+                        cursor: set.completed ? 'default' : 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={() => !set.completed && openEdit(set, exercise)}
+                    >
+                      {/* Checkbox */}
+                      <div style={{
+                        width: '24px',
+                        height: '24px',
+                        background: set.completed ? '#4ade80' : '#222',
+                        border: `2px solid ${set.completed ? '#4ade80' : '#444'}`,
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        color: '#000',
+                        fontWeight: 700,
+                        fontSize: '16px'
+                      }}>
+                        {set.completed && '✓'}
+                      </div>
+
+                      {/* Set Content */}
+                      <div style={{
+                        flex: 1,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <div style={{
+                          fontSize: '15px',
+                          color: set.completed ? '#666' : '#ccc',
+                          textDecoration: set.completed ? 'line-through' : 'none'
+                        }}>
+                          Set {set.setNumber}
+                        </div>
+
+                        <div style={{ textAlign: 'right' }}>
+                          {set.completed && set.actual ? (
+                            <>
+                              <div style={{ fontSize: '13px', color: '#888' }}>
+                                Prescribed: {set.prescribed.weight} × {set.prescribed.reps}
+                              </div>
+                              <div style={{ fontSize: '13px', color: '#4ade80', fontWeight: 600 }}>
+                                Actual: {set.actual.weight} × {set.actual.reps}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div style={{ fontSize: '13px', color: '#888' }}>
+                                {set.prescribed.weight} × {set.prescribed.reps}
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
+                                Tap to adjust
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+
+              {/* NEW: Finish Workout Button */}
+              {!isWorkoutFinished() && (
+                <div style={{
+                  background: isWorkoutComplete() ? '#4ade80' : '#333',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  marginTop: '24px'
+                }}>
+                  {isWorkoutComplete() ? (
+                    <>
+                      <div style={{ 
+                        fontSize: '18px', 
+                        fontWeight: 600, 
+                        color: '#000',
+                        marginBottom: '8px' 
+                      }}>
+                        🎉 All exercises completed!
+                      </div>
+                      <button
+                        onClick={finishWorkout}
+                        style={{
+                          background: '#000',
+                          color: '#4ade80',
+                          border: '2px solid #4ade80',
+                          borderRadius: '12px',
+                          padding: '16px 32px',
+                          fontSize: '16px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.background = '#4ade80';
+                          e.currentTarget.style.color = '#000';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.background = '#000';
+                          e.currentTarget.style.color = '#4ade80';
+                        }}
+                      >
+                        Finish Workout & Save to History
+                      </button>
+                    </>
+                  ) : (
+                    <div style={{ color: '#888', fontSize: '14px' }}>
+                      Complete all sets to finish your workout
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* NEW: Workout completed message */}
+              {isWorkoutFinished() && (
+                <div style={{
+                  background: '#22c55e',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  marginTop: '24px',
+                  color: '#000'
+                }}>
+                  <div style={{ fontSize: '18px', fontWeight: 600, marginBottom: '8px' }}>
+                    ✅ Workout Completed!
+                  </div>
+                  <div style={{ fontSize: '14px', opacity: 0.8 }}>
+                    Duration: {formatDuration(currentWorkout?.duration_seconds)} • Saved to History
                   </div>
                 </div>
-
-                {/* Sets */}
-                {exercise.sets.map(set => (
-                  <div
-                    key={set.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '16px 0',
-                      borderBottom: '1px solid #222',
-                      cursor: set.completed ? 'default' : 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onClick={() => !set.completed && openEdit(set, exercise)}
-                  >
-                    {/* Checkbox */}
-                    <div style={{
-                      width: '24px',
-                      height: '24px',
-                      background: set.completed ? '#4ade80' : '#222',
-                      border: `2px solid ${set.completed ? '#4ade80' : '#444'}`,
-                      borderRadius: '6px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      color: '#000',
-                      fontWeight: 700,
-                      fontSize: '16px'
-                    }}>
-                      {set.completed && '✓'}
-                    </div>
-
-                    {/* Set Content */}
-                    <div style={{
-                      flex: 1,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <div style={{
-                        fontSize: '15px',
-                        color: set.completed ? '#666' : '#ccc',
-                        textDecoration: set.completed ? 'line-through' : 'none'
-                      }}>
-                        Set {set.setNumber}
-                      </div>
-
-                      <div style={{ textAlign: 'right' }}>
-                        {set.completed && set.actual ? (
-                          <>
-                            <div style={{ fontSize: '13px', color: '#888' }}>
-                              Prescribed: {set.prescribed.weight} × {set.prescribed.reps}
-                            </div>
-                            <div style={{ fontSize: '13px', color: '#4ade80', fontWeight: 600 }}>
-                              Actual: {set.actual.weight} × {set.actual.reps}
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div style={{ fontSize: '13px', color: '#888' }}>
-                              {set.prescribed.weight} × {set.prescribed.reps}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
-                              Tap to adjust
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))
+              )}
+            </>
           )}
 
           {/* Edit Modal */}
