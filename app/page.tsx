@@ -94,12 +94,18 @@ const calculatePercentage = (weight: number, oneRM: number) => {
   return Math.round((weight / oneRM) * 100);
 };
 
+const calculateVolume = (setsReps: string, weight: number) => {
+  const { sets, reps } = parseSetReps(setsReps);
+  return sets * reps * weight;
+};
+
 export default function PTCommand() {
   const [currentTab, setCurrentTab] = useState('today');
   const [currentWeek, setCurrentWeek] = useState(1);
   const [currentProgram, setCurrentProgram] = useState<Program | null>(null);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [currentWorkout, setCurrentWorkout] = useState<any>(null);
+  const [currentDay, setCurrentDay] = useState('medium');
   
   // Today Tab State
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -319,6 +325,33 @@ export default function PTCommand() {
       setOneRMs(prev => ({ ...prev, [exercise]: value }));
     } catch (error) {
       console.error('Error updating 1RM:', error);
+    }
+  };
+
+  const updateProgramData = async (day: string, exercise: string, week: number, field: 'sets' | 'weight', value: string | number) => {
+    if (!currentProgram) return;
+
+    const currentExercises = { ...currentProgram.exercises };
+    
+    if (currentExercises[day] && currentExercises[day][exercise]) {
+      const weekKey = `week_${week}` as keyof ExerciseData;
+      currentExercises[day][exercise][weekKey] = {
+        ...currentExercises[day][exercise][weekKey],
+        [field]: value
+      };
+
+      try {
+        const { error } = await supabase
+          .from('programs')
+          .update({ exercises: currentExercises })
+          .eq('id', currentProgram.id);
+
+        if (error) throw error;
+
+        setCurrentProgram({ ...currentProgram, exercises: currentExercises });
+      } catch (error) {
+        console.error('Error updating program data:', error);
+      }
     }
   };
 
@@ -984,23 +1017,240 @@ export default function PTCommand() {
             </div>
           </div>
 
-          {/* Add Exercise Section */}
+          {/* Day Tabs */}
           <div style={{
             background: '#111',
-            borderRadius: '16px',
-            padding: '24px',
+            borderRadius: '12px',
+            padding: '6px',
             marginBottom: '24px',
-            border: '1px solid #333'
+            display: 'flex',
+            gap: '4px'
           }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px'
-            }}>
-              <div style={{ fontSize: '18px', fontWeight: 600, color: '#4ade80' }}>
-                Program Exercises
+            {['heavy', 'medium', 'light'].map(day => (
+              <button
+                key={day}
+                onClick={() => setCurrentDay(day)}
+                style={{
+                  flex: 1,
+                  background: currentDay === day ? '#4ade80' : 'transparent',
+                  color: currentDay === day ? '#000' : '#888',
+                  border: 'none',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  textTransform: 'capitalize'
+                }}
+              >
+                {day} Day
+              </button>
+            ))}
+          </div>
+
+          {/* Program Tables */}
+          {currentProgram && currentProgram.exercises[currentDay] && Object.keys(currentProgram.exercises[currentDay]).length > 0 ? (
+            Object.entries(currentProgram.exercises[currentDay]).map(([exerciseName, exerciseData]) => (
+              <div key={exerciseName} style={{
+                background: '#111',
+                borderRadius: '16px',
+                padding: '24px',
+                marginBottom: '24px',
+                border: '1px solid #333'
+              }}>
+                <h3 style={{ 
+                  fontSize: '18px', 
+                  fontWeight: 600, 
+                  color: '#fbbf24', 
+                  marginBottom: '16px',
+                  textTransform: 'capitalize'
+                }}>
+                  {EXERCISE_DISPLAY_NAMES[exerciseName] || exerciseName}
+                </h3>
+                
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: '14px'
+                  }}>
+                    <thead>
+                      <tr>
+                        <th style={{ 
+                          background: '#1a1a1a', 
+                          padding: '12px', 
+                          textAlign: 'left', 
+                          border: '1px solid #333',
+                          color: '#4ade80'
+                        }}>
+                          Metric
+                        </th>
+                        {[1, 2, 3, 4].map(week => (
+                          <th key={week} style={{ 
+                            background: '#1a1a1a', 
+                            padding: '12px', 
+                            textAlign: 'center', 
+                            border: '1px solid #333',
+                            color: '#4ade80'
+                          }}>
+                            Week {week}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Sets × Reps */}
+                      <tr>
+                        <td style={{ 
+                          padding: '12px', 
+                          border: '1px solid #222', 
+                          background: '#0a0a0a',
+                          color: '#ccc'
+                        }}>
+                          Sets × Reps
+                        </td>
+                        {[1, 2, 3, 4].map(week => {
+                          const weekData = (exerciseData as ExerciseData)[`week_${week}` as keyof ExerciseData];
+                          return (
+                            <td key={week} style={{ 
+                              padding: '12px', 
+                              border: '1px solid #222', 
+                              background: '#0a0a0a',
+                              textAlign: 'center'
+                            }}>
+                              <input
+                                type="text"
+                                value={weekData.sets}
+                                onChange={(e) => updateProgramData(currentDay, exerciseName, week, 'sets', e.target.value)}
+                                style={{
+                                  background: 'transparent',
+                                  border: '1px solid transparent',
+                                  color: '#4ade80',
+                                  textAlign: 'center',
+                                  width: '100%',
+                                  padding: '4px',
+                                  fontFamily: '"JetBrains Mono", monospace',
+                                  fontSize: '14px',
+                                  fontWeight: 600,
+                                  borderRadius: '4px'
+                                }}
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      
+                      {/* Weight */}
+                      <tr>
+                        <td style={{ 
+                          padding: '12px', 
+                          border: '1px solid #222', 
+                          background: '#0a0a0a',
+                          color: '#ccc'
+                        }}>
+                          Weight
+                        </td>
+                        {[1, 2, 3, 4].map(week => {
+                          const weekData = (exerciseData as ExerciseData)[`week_${week}` as keyof ExerciseData];
+                          return (
+                            <td key={week} style={{ 
+                              padding: '12px', 
+                              border: '1px solid #222', 
+                              background: '#0a0a0a',
+                              textAlign: 'center'
+                            }}>
+                              <input
+                                type="number"
+                                value={weekData.weight}
+                                onChange={(e) => updateProgramData(currentDay, exerciseName, week, 'weight', Number(e.target.value))}
+                                style={{
+                                  background: 'transparent',
+                                  border: '1px solid transparent',
+                                  color: '#fff',
+                                  textAlign: 'center',
+                                  width: '100%',
+                                  padding: '4px',
+                                  fontFamily: '"JetBrains Mono", monospace',
+                                  fontSize: '14px',
+                                  fontWeight: 600,
+                                  borderRadius: '4px'
+                                }}
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      
+                      {/* Percentage */}
+                      <tr>
+                        <td style={{ 
+                          padding: '12px', 
+                          border: '1px solid #222', 
+                          background: '#0a0a0a',
+                          color: '#ccc'
+                        }}>
+                          % 1RM
+                        </td>
+                        {[1, 2, 3, 4].map(week => {
+                          const weekData = (exerciseData as ExerciseData)[`week_${week}` as keyof ExerciseData];
+                          const exerciseKey = exerciseName.toLowerCase() as keyof OneRMs;
+                          const oneRM = oneRMs[exerciseKey] || oneRMs.squat;
+                          return (
+                            <td key={week} style={{ 
+                              padding: '12px', 
+                              border: '1px solid #222', 
+                              background: '#0a0a0a',
+                              textAlign: 'center',
+                              color: '#fbbf24',
+                              fontStyle: 'italic'
+                            }}>
+                              {calculatePercentage(weekData.weight, oneRM)}%
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      
+                      {/* Volume */}
+                      <tr>
+                        <td style={{ 
+                          padding: '12px', 
+                          border: '1px solid #222', 
+                          background: '#0a0a0a',
+                          color: '#ccc'
+                        }}>
+                          Volume
+                        </td>
+                        {[1, 2, 3, 4].map(week => {
+                          const weekData = (exerciseData as ExerciseData)[`week_${week}` as keyof ExerciseData];
+                          return (
+                            <td key={week} style={{ 
+                              padding: '12px', 
+                              border: '1px solid #222', 
+                              background: '#0a0a0a',
+                              textAlign: 'center',
+                              color: '#8b5cf6',
+                              fontStyle: 'italic'
+                            }}>
+                              {calculateVolume(weekData.sets, weekData.weight)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
+            ))
+          ) : (
+            <div style={{
+              background: '#111',
+              borderRadius: '16px',
+              padding: '24px',
+              textAlign: 'center',
+              color: '#666'
+            }}>
+              <p>No exercises for {currentDay} day yet.</p>
               <button
                 onClick={() => setShowAddExercise(true)}
                 style={{
@@ -1011,25 +1261,32 @@ export default function PTCommand() {
                   padding: '8px 16px',
                   fontSize: '14px',
                   fontWeight: 600,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  marginTop: '16px'
                 }}
               >
                 + Add Exercise
               </button>
             </div>
+          )}
 
-            {/* Current Program Exercises */}
-            {currentProgram && Object.keys(currentProgram.exercises.medium || {}).length > 0 ? (
-              <div style={{ color: '#ccc', fontSize: '14px' }}>
-                Current exercises: {Object.keys(currentProgram.exercises.medium || {})
-                  .map(ex => EXERCISE_DISPLAY_NAMES[ex] || ex)
-                  .join(', ')}
-              </div>
-            ) : (
-              <div style={{ color: '#666', fontSize: '14px' }}>
-                No exercises in program yet. Add some to get started.
-              </div>
-            )}
+          {/* Add Exercise Button */}
+          <div style={{ textAlign: 'center', marginTop: '24px' }}>
+            <button
+              onClick={() => setShowAddExercise(true)}
+              style={{
+                background: '#4ade80',
+                color: '#000',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              + Add Exercise
+            </button>
           </div>
 
           {/* Add Exercise Modal */}
