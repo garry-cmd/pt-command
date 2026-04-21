@@ -102,8 +102,10 @@ const ExerciseCard: React.FC<{
   oneRMs: OneRMs;
   onUpdate: (id: string, field: string, value: any) => void;
   onDelete: (id: string) => void;
-}> = ({ slot, oneRMs, onUpdate, onDelete }) => {
+  onExerciseChange: (id: string, exercise: string) => void;
+}> = ({ slot, oneRMs, onUpdate, onDelete, onExerciseChange }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [showExerciseSelect, setShowExerciseSelect] = useState(false);
 
   const exerciseKey = slot.exercise.toLowerCase() as keyof OneRMs;
   const oneRM = oneRMs[exerciseKey] || oneRMs.squat;
@@ -112,12 +114,15 @@ const ExerciseCard: React.FC<{
 
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
-    e.dataTransfer.setData('text/plain', JSON.stringify({
+    const dragData = {
       id: slot.id,
       exercise: slot.exercise,
       sets: slot.sets,
-      weight: slot.weight
-    }));
+      weight: slot.weight,
+      sourceWeek: slot.week_number,
+      sourceDay: slot.day_of_week
+    };
+    e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -143,18 +148,25 @@ const ExerciseCard: React.FC<{
       onMouseDown={(e) => e.currentTarget.style.cursor = 'grabbing'}
       onMouseUp={(e) => e.currentTarget.style.cursor = 'grab'}
     >
-      {/* Exercise Header */}
+      {/* Exercise Header - FIXED: Single gold header, click to change */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '8px'
+        marginBottom: '12px'
       }}>
-        <div style={{
-          fontSize: '14px',
-          fontWeight: 600,
-          color: '#fbbf24'
-        }}>
+        <div 
+          style={{
+            fontSize: '14px',
+            fontWeight: 600,
+            color: '#fbbf24',
+            cursor: 'pointer'
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowExerciseSelect(!showExerciseSelect);
+          }}
+        >
           {EXERCISE_DISPLAY_NAMES[slot.exercise] || slot.exercise}
         </div>
         <button
@@ -176,10 +188,40 @@ const ExerciseCard: React.FC<{
         </button>
       </div>
 
+      {/* Exercise selector dropdown - only shows when clicked */}
+      {showExerciseSelect && (
+        <div style={{ marginBottom: '12px' }}>
+          <select
+            value={slot.exercise}
+            onChange={(e) => {
+              onExerciseChange(slot.id, e.target.value);
+              setShowExerciseSelect(false);
+            }}
+            onClick={(e) => e.stopPropagation()}
+            autoFocus
+            style={{
+              background: '#222',
+              border: '1px solid #fbbf24',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              color: '#fff',
+              fontSize: '12px',
+              width: '100%'
+            }}
+          >
+            {EXERCISE_OPTIONS.map(ex => (
+              <option key={ex} value={ex}>
+                {EXERCISE_DISPLAY_NAMES[ex] || ex}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Exercise Details */}
       <div style={{ fontSize: '12px', fontFamily: '"JetBrains Mono", monospace' }}>
         {/* Sets x Reps */}
-        <div style={{ marginBottom: '4px' }}>
+        <div style={{ marginBottom: '6px' }}>
           <span style={{ color: '#888', marginRight: '8px' }}>Sets:</span>
           <input
             type="text"
@@ -199,7 +241,7 @@ const ExerciseCard: React.FC<{
         </div>
 
         {/* Weight */}
-        <div style={{ marginBottom: '4px' }}>
+        <div style={{ marginBottom: '6px' }}>
           <span style={{ color: '#888', marginRight: '8px' }}>Weight:</span>
           <input
             type="number"
@@ -218,44 +260,18 @@ const ExerciseCard: React.FC<{
           />
         </div>
 
-        {/* Exercise selector */}
-        <div style={{ marginBottom: '4px' }}>
-          <span style={{ color: '#888', marginRight: '8px' }}>Exercise:</span>
-          <select
-            value={slot.exercise}
-            onChange={(e) => onUpdate(slot.id, 'exercise', e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: '#222',
-              border: '1px solid #333',
-              borderRadius: '4px',
-              padding: '2px 6px',
-              color: '#fff',
-              fontSize: '11px',
-              width: '80px'
-            }}
-          >
-            {EXERCISE_OPTIONS.map(ex => (
-              <option key={ex} value={ex}>
-                {EXERCISE_DISPLAY_NAMES[ex] || ex}
-              </option>
-            ))}
-          </select>
-        </div>
-
         {/* Calculated metrics */}
         <div style={{ 
           borderTop: '1px solid #333', 
-          paddingTop: '6px', 
-          marginTop: '6px',
+          paddingTop: '6px',
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          gap: '4px'
+          gap: '8px'
         }}>
-          <div style={{ color: '#fbbf24', fontSize: '10px' }}>
+          <div style={{ color: '#fbbf24', fontSize: '11px', fontWeight: 600 }}>
             {percentage}% 1RM
           </div>
-          <div style={{ color: '#8b5cf6', fontSize: '10px' }}>
+          <div style={{ color: '#8b5cf6', fontSize: '11px', fontWeight: 600 }}>
             {volume} vol
           </div>
         </div>
@@ -274,7 +290,8 @@ const DropZone: React.FC<{
   onUpdateSlot: (id: string, field: string, value: any) => void;
   onDeleteSlot: (id: string) => void;
   onAddCard: (week: number, day: string) => void;
-}> = ({ week, day, slots, oneRMs, onDrop, onUpdateSlot, onDeleteSlot, onAddCard }) => {
+  onExerciseChange: (id: string, exercise: string) => void;
+}> = ({ week, day, slots, oneRMs, onDrop, onUpdateSlot, onDeleteSlot, onAddCard, onExerciseChange }) => {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -282,8 +299,15 @@ const DropZone: React.FC<{
     setIsDragOver(true);
   };
 
-  const handleDragLeave = () => {
-    setIsDragOver(false);
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only set isDragOver to false if we're leaving the drop zone completely
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setIsDragOver(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -319,10 +343,11 @@ const DropZone: React.FC<{
           oneRMs={oneRMs}
           onUpdate={onUpdateSlot}
           onDelete={onDeleteSlot}
+          onExerciseChange={onExerciseChange}
         />
       ))}
       
-      {/* Add Card Button */}
+      {/* FIXED: Add Exercise Button - now properly functional */}
       <button
         onClick={() => onAddCard(week, day)}
         style={{
@@ -334,7 +359,16 @@ const DropZone: React.FC<{
           width: '100%',
           fontSize: '12px',
           cursor: 'pointer',
-          marginTop: slots.length > 0 ? '8px' : '0'
+          marginTop: slots.length > 0 ? '8px' : '0',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.background = '#444';
+          e.currentTarget.style.color = '#aaa';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.background = '#333';
+          e.currentTarget.style.color = '#888';
         }}
       >
         + Add Exercise
@@ -607,6 +641,10 @@ export default function PTCommand() {
     }
   };
 
+  const updateExerciseType = async (id: string, exercise: string) => {
+    await updateProgramSlot(id, 'exercise', exercise);
+  };
+
   const deleteProgramSlot = async (id: string) => {
     try {
       const { error } = await supabase
@@ -623,6 +661,7 @@ export default function PTCommand() {
     }
   };
 
+  // FIXED: Add Exercise function with proper database insertion
   const addProgramSlot = async (week: number, day: string) => {
     if (!currentProgram) return;
 
@@ -640,7 +679,7 @@ export default function PTCommand() {
           day_of_week: day,
           exercise: 'squat',
           sets: '3×5',
-          weight: 0,
+          weight: 135, // FIXED: realistic starting weight instead of 0
           sort_order: nextSortOrder
         })
         .select()
@@ -648,45 +687,49 @@ export default function PTCommand() {
 
       if (error) throw error;
 
-      // Update local state
-      setProgramSlots(prev => [...prev, data]);
+      // Update local state immediately
+      if (data) {
+        setProgramSlots(prev => [...prev, data]);
+      }
     } catch (error) {
       console.error('Error adding program slot:', error);
     }
   };
 
+  // FIXED: Drag & drop - single operation, no delete/create sequence
   const handleCardDrop = async (week: number, day: string, cardData: any) => {
     if (!currentProgram) return;
 
-    try {
-      // Delete the original card
-      await deleteProgramSlot(cardData.id);
+    // Don't do anything if dropping in the same location
+    if (cardData.sourceWeek === week && cardData.sourceDay === day) {
+      return;
+    }
 
+    try {
       // Find the next sort order in the target cell
       const existingSlotsInCell = programSlots.filter(
-        slot => slot.week_number === week && slot.day_of_week === day
+        slot => slot.week_number === week && slot.day_of_week === day && slot.id !== cardData.id
       );
       const nextSortOrder = existingSlotsInCell.length;
 
-      // Create new card in target location
-      const { data, error } = await supabase
+      // FIXED: Update card in ONE operation instead of delete/create
+      const { error } = await supabase
         .from('program_slots')
-        .insert({
-          program_id: currentProgram.id,
+        .update({
           week_number: week,
           day_of_week: day,
-          exercise: cardData.exercise,
-          sets: cardData.sets,
-          weight: cardData.weight,
           sort_order: nextSortOrder
         })
-        .select()
-        .single();
+        .eq('id', cardData.id);
 
       if (error) throw error;
 
-      // Reload all slots to get updated state
-      loadProgramSlots();
+      // Update local state
+      setProgramSlots(prev => prev.map(slot => 
+        slot.id === cardData.id 
+          ? { ...slot, week_number: week, day_of_week: day, sort_order: nextSortOrder }
+          : slot
+      ));
     } catch (error) {
       console.error('Error moving card:', error);
     }
@@ -1376,6 +1419,7 @@ export default function PTCommand() {
                         onUpdateSlot={updateProgramSlot}
                         onDeleteSlot={deleteProgramSlot}
                         onAddCard={addProgramSlot}
+                        onExerciseChange={updateExerciseType}
                       />
                     );
                   })}
