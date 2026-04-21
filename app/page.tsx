@@ -209,7 +209,7 @@ export default function PTCommand() {
         {/* Dual Cards Layout */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: window.innerWidth > 768 ? '1fr 1fr' : '1fr',
           gap: '24px',
           marginBottom: '40px'
         }}>
@@ -411,8 +411,12 @@ export default function PTCommand() {
                     cursor: 'pointer',
                     transition: 'all 0.2s ease'
                   }}
-                  onMouseOver={(e) => e.target.style.background = '#16a34a'}
-                  onMouseOut={(e) => e.target.style.background = '#22c55e'}
+                  onMouseEnter={(e) => {
+                    (e.target as HTMLButtonElement).style.background = '#16a34a';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.target as HTMLButtonElement).style.background = '#22c55e';
+                  }}
                 >
                   Complete Set
                 </button>
